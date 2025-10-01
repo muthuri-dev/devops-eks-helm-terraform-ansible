@@ -43,14 +43,16 @@ This project implements a complete production-grade EKS infrastructure with obse
 ## 🎯 Features
 
 ### ✅ **Infrastructure Components**
-
 - **Amazon EKS**: Managed Kubernetes cluster with multi-AZ worker nodes
 - **VPC Networking**: Production-grade networking with public/private subnets
 - **EBS CSI Driver**: Persistent storage support with automatic provisioning
 - **Load Balancers**: AWS ALB for external access to services
 
-### ✅ **Observability Stack**
+### ✅ **Container & Database**
+- **Amazon ECR**: Container registry for Docker images with scanning and lifecycle management
+- **CloudNativePG**: PostgreSQL operator for database workload management
 
+### ✅ **Observability Stack**
 - **ELK Stack**: Elasticsearch + Kibana with ECK operator for log aggregation
 - **Fluent Bit**: Lightweight log collection from all containers
 - **Prometheus**: Metrics collection and monitoring
@@ -76,7 +78,9 @@ devops-eks-helm-terraform-ansible/
 │   ├── 07-monitoring.tf        # Prometheus and Grafana deployment
 │   ├── 08-argocd.tf           # ArgoCD GitOps platform
 │   ├── 09-logging.tf          # ECK-based ELK stack
-│   └── 11-outputs.tf          # Infrastructure outputs
+│   ├── 11-outputs.tf          # Infrastructure outputs
+│   ├── 12-ecr.tf              # Amazon ECR container registry
+│   └── 13-cloudnative-pg.tf   # CloudNativePG PostgreSQL operator
 ├── helm/                       # Helm charts for applications
 ├── ansible/                    # Ansible playbooks and roles
 ├── application/                # Application source code
@@ -180,7 +184,6 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 ```
 
 ### **Elasticsearch (Direct Access)**
-
 ```bash
 # Port-forward to access Elasticsearch
 kubectl port-forward service/elasticsearch-es-http 9200:9200 -n elastic-stack
@@ -190,6 +193,42 @@ curl -X GET "localhost:9200/_cluster/health?pretty"
 
 # Check indices
 curl -X GET "localhost:9200/_cat/indices?v"
+```
+
+### **Amazon ECR (Container Registry)**
+```bash
+# Get ECR login command
+terraform output ecr_login_command
+
+# Login to ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
+
+# Build and push example
+docker build -t devops-app:latest .
+docker tag devops-app:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest  
+docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest
+```
+
+### **CloudNativePG (PostgreSQL)**
+```bash
+# Check operator status
+kubectl get pods -n cnpg-system
+
+# Create a simple PostgreSQL cluster
+kubectl apply -f - <<EOF
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: my-postgres
+  namespace: default
+spec:
+  instances: 1
+  storage:
+    size: 1Gi
+EOF
+
+# Check cluster status
+kubectl get cluster
 ```
 
 ## 📊 Infrastructure Components Details
