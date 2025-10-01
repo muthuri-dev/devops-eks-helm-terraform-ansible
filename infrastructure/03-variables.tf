@@ -13,3 +13,9 @@ variable "eks_cluster_name" {
   type = string
   default = "production_eks"
 }
+
+variable "letsencrypt_email" {
+  type = string
+  description = "Email address for Let's Encrypt certificates"
+  default = "muthurikennedy082@gmail.com"
+}

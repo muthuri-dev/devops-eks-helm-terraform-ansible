@@ -23,3 +23,9 @@ output "postgres_operator_status" {
   description = "Check CloudNativePG operator status"
   value       = "kubectl get pods -n cnpg-system"
 }
+
+# Cert-Manager Output
+output "cert_manager_status" {
+  description = "Check cert-manager status"
+  value       = "kubectl get pods -n cert-manager"
+}

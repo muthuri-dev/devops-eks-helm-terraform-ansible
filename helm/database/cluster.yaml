@@ -1,0 +1,36 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgresql-db
+  namespace: databases
+  labels:
+    app: postgresql
+    managed-by: argocd
+spec:
+  instances: 3
+
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+
+  storage:
+    size: 3Gi
+
+  managed:
+    roles:
+      - name: app
+        ensure: present
+        comment: "Application user with superuser privileges"
+        login: true
+        superuser: true
+        inherit: true
+        connectionLimit: -1
+
+  bootstrap:
+    initdb:
+      database: maindb
+      owner: app
+      postInitSQL:
+        - "CREATE DATABASE golang_app OWNER app;"

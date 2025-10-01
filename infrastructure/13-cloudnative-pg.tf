@@ -1,5 +1,4 @@
 # CloudNativePG - PostgreSQL Operator for Kubernetes
-# Simple installation of the operator only
 
 resource "helm_release" "cloudnative_pg" {
   name             = "cnpg"

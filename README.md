@@ -8,34 +8,34 @@ This project implements a complete production-grade EKS infrastructure with obse
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
-│                                  AWS Cloud                                     │
+│                                  AWS Cloud                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│  │                              VPC (10.0.0.0/16)                             │ │
+│  │                              VPC (10.0.0.0/16)                              │ │
 │  │                                                                             │ │
-│  │  ┌─────────────────┐                           ┌─────────────────┐         │ │
-│  │  │   Public Subnet │                           │   Public Subnet │         │ │
-│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │         │ │
-│  │  │                 │                           │                 │         │ │
-│  │  │  ┌─────────────┐│                           │┌─────────────────┐       │ │
-│  │  │  │ NAT Gateway ││                           ││  Load Balancers │       │ │
-│  │  │  │             ││                           ││ (Kibana/Grafana)│       │ │
-│  │  │  └─────────────┘│                           │└─────────────────┘       │ │
-│  │  └─────────────────┘                           └─────────────────┘         │ │
-│  │           │                                              │                 │ │
-│  │  ┌─────────────────┐                           ┌─────────────────┐         │ │
-│  │  │  Private Subnet │                           │  Private Subnet │         │ │
-│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │         │ │
-│  │  │                 │                           │                 │         │ │
-│  │  │ ┌─────────────┐ │                           │ ┌─────────────┐ │         │ │
-│  │  │ │ EKS Workers │ │                           │ │ EKS Workers │ │         │ │
-│  │  │ │             │ │                           │ │             │ │         │ │
-│  │  │ │┌───────────┐│ │                           │ │┌───────────┐│ │         │ │
-│  │  │ ││ELK Stack  ││ │                           │ ││Monitoring ││ │         │ │
-│  │  │ ││Prometheus ││ │                           │ ││ArgoCD     ││ │         │ │
-│  │  │ ││Fluent Bit ││ │                           │ ││Apps       ││ │         │ │
-│  │  │ │└───────────┘│ │                           │ │└───────────┘│ │         │ │
-│  │  │ └─────────────┘ │                           │ └─────────────┘ │         │ │
-│  │  └─────────────────┘                           └─────────────────┘         │ │
+│  │  ┌─────────────────┐                           ┌─────────────────┐          │ │
+│  │  │   Public Subnet │                           │   Public Subnet │          │ │
+│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │          │ │
+│  │  │                 │                           │                 │          │ │
+│  │  │  ┌─────────────┐│                           │┌─────────────────┐         │ │
+│  │  │  │ NAT Gateway ││                           ││  Load Balancers │         │ │
+│  │  │  │             ││                           ││ (Kibana/Grafana)│         │ │
+│  │  │  └─────────────┘│                           │└─────────────────┘         │ │
+│  │  └─────────────────┘                           └─────────────────┘          │ │
+│  │           │                                              │                  │ │
+│  │  ┌─────────────────┐                           ┌─────────────────┐          │ │
+│  │  │  Private Subnet │                           │  Private Subnet │          │ │
+│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │          │ │
+│  │  │                 │                           │                 │          │ │
+│  │  │ ┌─────────────┐ │                           │ ┌─────────────┐ │          │ │
+│  │  │ │ EKS Workers │ │                           │ │ EKS Workers │ │          │ │
+│  │  │ │             │ │                           │ │             │ │          │ │
+│  │  │ │┌───────────┐│ │                           │ │┌───────────┐│ │          │ │
+│  │  │ ││ELK Stack  ││ │                           │ ││Monitoring ││ │          │ │
+│  │  │ ││Prometheus ││ │                           │ ││ArgoCD     ││ │          │ │
+│  │  │ ││Fluent Bit ││ │                           │ ││Apps       ││ │          │ │
+│  │  │ │└───────────┘│ │                           │ │└───────────┘│ │          │ │
+│  │  │ └─────────────┘ │                           │ └─────────────┘ │          │ │
+│  │  └─────────────────┘                           └─────────────────┘          │ │
 │  └─────────────────────────────────────────────────────────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -43,16 +43,19 @@ This project implements a complete production-grade EKS infrastructure with obse
 ## 🎯 Features
 
 ### ✅ **Infrastructure Components**
+
 - **Amazon EKS**: Managed Kubernetes cluster with multi-AZ worker nodes
 - **VPC Networking**: Production-grade networking with public/private subnets
 - **EBS CSI Driver**: Persistent storage support with automatic provisioning
 - **Load Balancers**: AWS ALB for external access to services
 
 ### ✅ **Container & Database**
+
 - **Amazon ECR**: Container registry for Docker images with scanning and lifecycle management
 - **CloudNativePG**: PostgreSQL operator for database workload management
 
 ### ✅ **Observability Stack**
+
 - **ELK Stack**: Elasticsearch + Kibana with ECK operator for log aggregation
 - **Fluent Bit**: Lightweight log collection from all containers
 - **Prometheus**: Metrics collection and monitoring
@@ -184,6 +187,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 ```
 
 ### **Elasticsearch (Direct Access)**
+
 ```bash
 # Port-forward to access Elasticsearch
 kubectl port-forward service/elasticsearch-es-http 9200:9200 -n elastic-stack
@@ -196,6 +200,7 @@ curl -X GET "localhost:9200/_cat/indices?v"
 ```
 
 ### **Amazon ECR (Container Registry)**
+
 ```bash
 # Get ECR login command
 terraform output ecr_login_command
@@ -205,11 +210,12 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 
 # Build and push example
 docker build -t devops-app:latest .
-docker tag devops-app:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest  
+docker tag devops-app:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest
 docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest
 ```
 
 ### **CloudNativePG (PostgreSQL)**
+
 ```bash
 # Check operator status
 kubectl get pods -n cnpg-system
