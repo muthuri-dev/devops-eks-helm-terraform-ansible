@@ -1,5 +1,25 @@
 
-
 output "endpoint" {
   value = aws_eks_cluster.production_eks_cluster.endpoint
+}
+
+# ECR Repository Output
+output "ecr_repository" {
+  description = "ECR repository information"
+  value = {
+    name           = aws_ecr_repository.app.name
+    repository_url = aws_ecr_repository.app.repository_url
+    arn            = aws_ecr_repository.app.arn
+  }
+}
+
+output "ecr_login_command" {
+  description = "Command to login to ECR"
+  value       = "aws ecr get-login-password --region ${var.region} | docker login --username AWS --password-stdin ${aws_ecr_repository.app.registry_id}.dkr.ecr.${var.region}.amazonaws.com"
+}
+
+# CloudNativePG Output
+output "postgres_operator_status" {
+  description = "Check CloudNativePG operator status"
+  value       = "kubectl get pods -n cnpg-system"
 }
