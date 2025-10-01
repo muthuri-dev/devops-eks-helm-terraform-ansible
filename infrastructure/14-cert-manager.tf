@@ -1,4 +1,4 @@
-# cert-manager Helm chart
+# cert-manager Helm chart.
 resource "helm_release" "cert_manager" {
   name       = "cert-manager"
   chart      = "oci://quay.io/jetstack/charts/cert-manager"
