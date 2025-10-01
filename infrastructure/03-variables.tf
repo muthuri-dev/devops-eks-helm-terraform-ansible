@@ -11,5 +11,5 @@ variable "vpc_cidr_block" {
 
 variable "eks_cluster_name" {
   type = string
-  default = "production"
+  default = "production_eks"
 }
