@@ -203,13 +203,3 @@ resource "helm_release" "fluent_bit" {
   depends_on = [kubectl_manifest.elasticsearch, kubernetes_namespace.elastic_stack]
 }
 
-# Outputs for accessing the services
-output "elasticsearch_endpoint" {
-  description = "Elasticsearch service endpoint"
-  value       = "Use: kubectl port-forward service/elasticsearch-es-http 9200:9200 -n elastic-stack"
-}
-
-output "kibana_service_info" {
-  description = "Kibana service access information"
-  value       = "Get LoadBalancer URL: kubectl get service kibana-kb-http -n elastic-stack"
-}
