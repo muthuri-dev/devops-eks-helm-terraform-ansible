@@ -7,7 +7,7 @@ metadata:
     app: postgresql
     managed-by: argocd
 spec:
-  instances: 3
+  instances: 2
 
   postgresql:
     parameters:
