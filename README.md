@@ -53,6 +53,7 @@ This project implements a complete production-grade EKS infrastructure with obse
 
 - **Amazon ECR**: Container registry for Docker images with scanning and lifecycle management
 - **CloudNativePG**: PostgreSQL operator for database workload management
+- **Cert-Manager**: Automatic SSL certificate management with Let's Encrypt integration
 
 ### ✅ **Observability Stack**
 
@@ -83,7 +84,8 @@ devops-eks-helm-terraform-ansible/
 │   ├── 09-logging.tf          # ECK-based ELK stack
 │   ├── 11-outputs.tf          # Infrastructure outputs
 │   ├── 12-ecr.tf              # Amazon ECR container registry
-│   └── 13-cloudnative-pg.tf   # CloudNativePG PostgreSQL operator
+│   ├── 13-cloudnative-pg.tf   # CloudNativePG PostgreSQL operator
+│   └── 14-cert-manager.tf     # Cert-Manager for SSL certificates
 ├── helm/                       # Helm charts for applications
 ├── ansible/                    # Ansible playbooks and roles
 ├── application/                # Application source code
@@ -237,6 +239,48 @@ EOF
 kubectl get cluster
 ```
 
+### **Cert-Manager (SSL Certificates)**
+
+```bash
+# Check cert-manager status
+kubectl get pods -n cert-manager
+
+# View available certificate issuers
+kubectl get clusterissuers
+
+# Check certificates across all namespaces
+kubectl get certificates -A
+
+# Example: Enable SSL for your Ingress
+kubectl apply -f - <<EOF
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-app
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - myapp.example.com
+    secretName: myapp-tls
+  rules:
+  - host: myapp.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app
+            port:
+              number: 80
+EOF
+
+# Check certificate creation progress
+kubectl describe certificate myapp-tls
+```
+
 ## 📊 Infrastructure Components Details
 
 ### **EKS Cluster Configuration**
@@ -273,6 +317,18 @@ kubectl get cluster
 - **Prometheus**: Metrics collection and storage
 - **Grafana**: Metrics visualization dashboards
 - **Service Monitors**: Automatic discovery of metrics endpoints
+
+### **Security & SSL Configuration**
+
+#### Cert-Manager
+
+- **Version**: v1.15.3 (OCI Helm chart)
+- **Certificate Authority**: Let's Encrypt production
+- **Email Notifications**: `muthurikennedy082@gmail.com`
+- **Challenge Method**: HTTP-01 validation
+- **Ingress Class**: nginx
+- **Auto-Renewal**: 60 days before expiration
+- **ClusterIssuer**: `letsencrypt-prod` for production certificates
 
 #### GitOps
 
@@ -327,6 +383,28 @@ kubectl get service kibana-kb-http -n elastic-stack
 #### Elasticsearch Yellow Status
 
 This is normal for single-node clusters. For production, increase replica count.
+
+#### Cert-Manager Certificate Issues
+
+```bash
+# Check cert-manager pods
+kubectl get pods -n cert-manager
+
+# Check certificate status
+kubectl get certificates -A
+
+# Describe problematic certificate
+kubectl describe certificate <certificate-name> -n <namespace>
+
+# Check certificate challenges
+kubectl get challenges -A
+
+# View cert-manager logs
+kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager
+
+# Force certificate renewal
+kubectl annotate certificate <certificate-name> force-renewal=$(date +%s) -n <namespace>
+```
 
 ### **Useful Commands**
 
