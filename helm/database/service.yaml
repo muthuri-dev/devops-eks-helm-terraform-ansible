@@ -6,6 +6,9 @@ metadata:
   labels:
     app: postgresql
     managed-by: argocd
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
   type: LoadBalancer
   ports:
@@ -16,6 +19,3 @@ spec:
   selector:
     postgresql: postgresql-db
     role: primary
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
