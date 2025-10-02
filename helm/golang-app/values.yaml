@@ -2,47 +2,40 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# This will set the replicaset count more information can be found here: https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
-replicaCount: 3
+replicaCount: 1
 
-# This sets the container image more information can be found here: https://kubernetes.io/docs/concepts/containers/images/
 image:
   repository: 913024026099.dkr.ecr.us-east-1.amazonaws.com/golang-app
-  # This sets the pull policy for images.
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "7069053"
+  tag: "0faaa32"
 
-# This is for the secrets for pulling an image from a private repository more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/
 imagePullSecrets: []
-# This is to override the chart name.
 nameOverride: "golang-app"
 fullnameOverride: "golang-app"
 
-# This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
   create: true
   automount: true
   annotations: {}
-  name: "golang-app"
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
 
-# Simple Vault integration
-vault:
-  enabled: true
-  role: "golang-app"
-  secretPath: "kv/data/database"
-
+# This is for setting Kubernetes Annotations to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations:
   vault.hashicorp.com/agent-inject: "true"
-  vault.hashicorp.com/role: "golang-app"
-  vault.hashicorp.com/agent-inject-secret-config: "kv/data/database"
-  vault.hashicorp.com/agent-inject-template-config: |
+  vault.hashicorp.com/agent-inject-secret-database: "kv/data/database"
+  vault.hashicorp.com/agent-inject-template-database: |
     {{- with secret "kv/data/database" -}}
-    {{- range $key, $value := .Data.data }}
-    {{ $key }}="{{ $value }}"
-    {{- end }}
+    export DB_HOST="{{ .Data.data.host }}"
+    export DB_PORT="{{ .Data.data.port }}"
+    export DB_NAME="{{ .Data.data.name }}"
+    export DB_USER="{{ .Data.data.user }}"
+    export DB_PASSWORD="{{ .Data.data.password }}"
     {{- end -}}
-
+  vault.hashicorp.com/role: "golang-app"
+# This is for setting Kubernetes Labels to a Pod.
+# For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
 
 podSecurityContext:
@@ -84,17 +77,12 @@ ingress:
   #      - chart-example.local
 
 resources:
-  {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
 
 # This is to setup the liveness and readiness probes more information can be found here: https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/
 livenessProbe:
@@ -109,7 +97,7 @@ readinessProbe:
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
   enabled: false
-  minReplicas: 3
+  minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
