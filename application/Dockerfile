@@ -2,10 +2,19 @@ FROM golang:1.25-alpine
 
 WORKDIR /app
 
+# Copy go mod files first for better caching
+COPY go.mod go.sum ./
+
+# Download dependencies
+RUN go mod download
+
+# Copy source code
 COPY . .
 
-ENV GO111MODULE=on
-RUN go mod tidy && go build -o main .
+# Build the application
+ENV CGO_ENABLED=0
+ENV GOOS=linux
+RUN go build -a -installsuffix cgo -o main .
 
 EXPOSE 8080
 
