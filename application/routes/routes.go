@@ -2,7 +2,7 @@ package routes
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/handlers"
+	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/handlers"
 )
 
 // SetupRoutes configures all the routes for the application

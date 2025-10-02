@@ -1,4 +1,4 @@
-module github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application
+module github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application
 
 go 1.25
 

@@ -145,7 +145,7 @@ resource "kubectl_manifest" "kibana" {
 # Fluent Bit for log collection (compatible with ECK)
 resource "helm_release" "fluent_bit" {
   name       = "fluent-bit"
-  repository = "https://fluent.github.io/helm-charts"
+  repository = "https://fluent.github.com/helm-charts"
   chart      = "fluent-bit"
   namespace  = "elastic-stack"
 

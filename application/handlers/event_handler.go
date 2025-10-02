@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
-	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/service"
+	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
+	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/service"
 )
 
 // EventHandler handles HTTP requests for events
