@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"app/config"
-	"app/database"
-	"app/routes"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/config"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/database"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"

@@ -3,8 +3,8 @@ package repository
 import (
 	"time"
 
-	"app/database"
-	"app/models"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/database"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
 
 	"gorm.io/gorm"
 )

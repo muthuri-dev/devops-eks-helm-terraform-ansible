@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"app/models"
-	"app/service"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
+	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/service"
 
 	"github.com/gin-gonic/gin"
 )
