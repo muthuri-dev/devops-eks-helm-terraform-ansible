@@ -4,7 +4,8 @@ WORKDIR /app
 
 COPY . .
 
-RUN go mod tidy && go mod download && go build -o main .
+ENV GO111MODULE=on
+RUN go mod tidy && go build -o main .
 
 EXPOSE 8080
 
