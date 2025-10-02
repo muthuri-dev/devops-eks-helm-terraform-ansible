@@ -3,9 +3,10 @@ package handlers
 import (
 	"net/http"
 
+	"events-api/models"
+	"events-api/service"
+
 	"github.com/gin-gonic/gin"
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/service"
 )
 
 // EventHandler handles HTTP requests for events

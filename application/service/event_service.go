@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/repository"
+	"events-api/models"
+	"events-api/repository"
+
 	"gorm.io/gorm"
 )
 

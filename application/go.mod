@@ -1,4 +1,4 @@
-module github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application
+module events-api
 
 go 1.25
 

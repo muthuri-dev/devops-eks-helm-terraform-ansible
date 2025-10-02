@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/config"
-	"github.com/muthuri-dev/devops-eks-helm-terraform-ansible/application/models"
+	"events-api/config"
+	"events-api/models"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
