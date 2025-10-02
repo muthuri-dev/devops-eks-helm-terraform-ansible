@@ -3,8 +3,8 @@ package repository
 import (
 	"time"
 
-	"application/database"
-	"application/models"
+	"app/database"
+	"app/models"
 
 	"gorm.io/gorm"
 )

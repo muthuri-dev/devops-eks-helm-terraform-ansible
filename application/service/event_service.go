@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"time"
 
-	"application/models"
-	"application/repository"
+	"app/models"
+	"app/repository"
 
 	"gorm.io/gorm"
 )

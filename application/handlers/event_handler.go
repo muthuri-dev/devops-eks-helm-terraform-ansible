@@ -3,8 +3,8 @@ package handlers
 import (
 	"net/http"
 
-	"application/models"
-	"application/service"
+	"app/models"
+	"app/service"
 
 	"github.com/gin-gonic/gin"
 )
