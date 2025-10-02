@@ -1,0 +1,87 @@
+name: Build and Deploy Events API
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - "application/**"
+
+env:
+    GH_VERSION: ${{ github.sha }}
+    IMAGE_NAME: golang-app
+    VERSION_NUMBER: ${{ github.run_number }}
+    AWS_REGION: us-east-1
+    ECR_REPOSITORY: golang-app
+
+jobs:
+    build-and-publish:
+        permissions:
+            id-token: write
+            contents: write
+            packages: write
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Get AWS credentials from Vault
+              uses: hashicorp/vault-action@v3
+              with:
+                  url: ${{ secrets.VAULT_URL }}
+                  token: ${{ secrets.VAULT_TOKEN }}
+                  secrets: |
+                      kv/data/github_workflows aws_access_key_id | AWS_ACCESS_KEY_ID ;
+                      kv/data/github_workflows aws_secret_access_key | AWS_SECRET_ACCESS_KEY
+
+            - name: Configure AWS credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
+
+            - name: Build and Push to ECR
+              uses: docker/build-push-action@v5
+              with:
+                  push: true
+                  context: ./application
+                  tags: |
+                      ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+                      ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }}
+
+            - name: Output Image name
+              run: |
+                  echo "Image pushed to ECR: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }}"
+
+    update-helm-chart:
+        permissions:
+            contents: write
+        runs-on: ubuntu-latest
+        needs: build-and-publish
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v4
+
+            - name: Setup Git Config
+              uses: fregante/setup-git-user@v2
+
+            - name: Update image in helm values.yaml
+              run: |
+                  echo "Updating image repository and tag in helm/golang-app/values.yaml"
+                  sed -i "s|repository: .*|repository: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}|" helm/golang-app/values.yaml
+                  sed -i "s|tag: .*|tag: \"${{ env.GH_VERSION }}\"|" helm/golang-app/values.yaml
+
+            - name: Commit & push changes
+              run: |
+                  git add helm/golang-app/values.yaml
+                  if ! git diff --cached --quiet; then
+                    git commit -m "ci: update ${{ env.IMAGE_NAME }} image to ${{ env.GH_VERSION }} [skip ci]"
+                    git push origin main
+                  else
+                    echo "No changes to commit."
+                  fi
