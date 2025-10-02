@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN go mod download && go build -o main .
+RUN go mod tidy && go mod download && go build -o main .
 
 EXPOSE 8080
 
