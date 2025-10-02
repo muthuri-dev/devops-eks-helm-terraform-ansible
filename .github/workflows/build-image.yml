@@ -51,7 +51,6 @@ jobs:
               with:
                   push: true
                   context: ./application
-                  file: docker/Dockerfile
                   no-cache: true
                   tags: |
                       ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
