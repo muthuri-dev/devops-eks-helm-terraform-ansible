@@ -1,4 +1,4 @@
-module events-api
+module app
 
 go 1.25
 

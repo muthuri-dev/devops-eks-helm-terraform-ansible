@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"events-api/config"
-	"events-api/models"
+	"app/config"
+	"app/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

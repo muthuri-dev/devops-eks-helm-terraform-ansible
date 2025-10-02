@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"events-api/handlers"
+	"app/handlers"
 
 	"github.com/gin-gonic/gin"
 )

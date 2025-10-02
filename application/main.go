@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"events-api/config"
-	"events-api/database"
-	"events-api/routes"
+	"app/config"
+	"app/database"
+	"app/routes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
