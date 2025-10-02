@@ -51,6 +51,7 @@ jobs:
               with:
                   push: true
                   context: ./application
+                  no-cache: true
                   tags: |
                       ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
                       ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }}
