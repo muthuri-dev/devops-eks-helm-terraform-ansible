@@ -3,8 +3,8 @@ package repository
 import (
 	"time"
 
-	"events-api/database"
-	"events-api/models"
+	"application/database"
+	"application/models"
 
 	"gorm.io/gorm"
 )
