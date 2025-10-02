@@ -1,6 +1,6 @@
 # DevOps EKS Infrastructure with Terraform, Helm & Ansible
 
-A production-ready DevOps infrastructure solution featuring Amazon EKS cluster with comprehensive observability stack including ELK (Elasticsearch, Logstash, Kibana), Prometheus/Grafana monitoring, and ArgoCD GitOps deployment using Infrastructure as Code (IaC) principles.
+A production-ready DevOps infrastructure solution featuring Amazon EKS cluster with comprehensive observability stack, monitoring, logging, GitOps, and auto-scaling using Infrastructure as Code (IaC) principles.
 
 ## 🏗️ Architecture Overview
 
@@ -28,11 +28,12 @@ This project implements a complete production-grade EKS infrastructure with obse
 │  │  │                 │                           │                 │          │ │
 │  │  │ ┌─────────────┐ │                           │ ┌─────────────┐ │          │ │
 │  │  │ │ EKS Workers │ │                           │ │ EKS Workers │ │          │ │
-│  │  │ │             │ │                           │ │             │ │          │ │
+│  │  │ │ (Auto-Scale)│ │                           │ │ (Auto-Scale)│ │          │ │
 │  │  │ │┌───────────┐│ │                           │ │┌───────────┐│ │          │ │
 │  │  │ ││ELK Stack  ││ │                           │ ││Monitoring ││ │          │ │
 │  │  │ ││Prometheus ││ │                           │ ││ArgoCD     ││ │          │ │
-│  │  │ ││Fluent Bit ││ │                           │ ││Apps       ││ │          │ │
+│  │  │ ││Vault      ││ │                           │ ││Apps       ││ │          │ │
+│  │  │ ││Fluent Bit ││ │                           │ ││PostgreSQL ││ │          │ │
 │  │  │ │└───────────┘│ │                           │ │└───────────┘│ │          │ │
 │  │  │ └─────────────┘ │                           │ └─────────────┘ │          │ │
 │  │  └─────────────────┘                           └─────────────────┘          │ │
@@ -44,7 +45,8 @@ This project implements a complete production-grade EKS infrastructure with obse
 
 ### ✅ **Infrastructure Components**
 
-- **Amazon EKS**: Managed Kubernetes cluster with multi-AZ worker nodes
+- **Amazon EKS**: Managed Kubernetes cluster with auto-scaling worker nodes
+- **Cluster Autoscaler**: Automatic node scaling based on pod demand
 - **VPC Networking**: Production-grade networking with public/private subnets
 - **EBS CSI Driver**: Persistent storage support with automatic provisioning
 - **Load Balancers**: AWS ALB for external access to services
@@ -53,14 +55,16 @@ This project implements a complete production-grade EKS infrastructure with obse
 
 - **Amazon ECR**: Container registry for Docker images with scanning and lifecycle management
 - **CloudNativePG**: PostgreSQL operator for database workload management
+- **HashiCorp Vault**: Secrets management with secure storage
 - **Cert-Manager**: Automatic SSL certificate management with Let's Encrypt integration
 
 ### ✅ **Observability Stack**
 
 - **ELK Stack**: Elasticsearch + Kibana with ECK operator for log aggregation
 - **Fluent Bit**: Lightweight log collection from all containers
-- **Prometheus**: Metrics collection and monitoring
-- **Grafana**: Metrics visualization and dashboards
+- **Prometheus**: Metrics collection and monitoring with persistent storage
+- **Grafana**: Metrics visualization and dashboards with persistent storage
+- **AlertManager**: Alert routing and management (configure via UI)
 
 ### ✅ **GitOps & DevOps**
 
@@ -72,25 +76,29 @@ This project implements a complete production-grade EKS infrastructure with obse
 
 ```
 devops-eks-helm-terraform-ansible/
-├── infrastructure/              # Terraform IaC configurations
-│   ├── 01-provider.tf          # Multi-provider configuration (AWS, Helm, Kubernetes, kubectl, TLS)
-│   ├── 02-backend.tf           # S3 backend with state locking
-│   ├── 03-variables.tf         # Variable definitions
-│   ├── 04-vpc-networking.tf    # VPC, subnets, NAT gateway, security groups
-│   ├── 05-eks-networking.tf    # EKS cluster and node groups
-│   ├── 06-ebs-csi.tf          # EBS CSI driver with OIDC provider
-│   ├── 07-monitoring.tf        # Prometheus and Grafana deployment
-│   ├── 08-argocd.tf           # ArgoCD GitOps platform
-│   ├── 09-logging.tf          # ECK-based ELK stack
-│   ├── 11-outputs.tf          # Infrastructure outputs
-│   ├── 12-ecr.tf              # Amazon ECR container registry
-│   ├── 13-cloudnative-pg.tf   # CloudNativePG PostgreSQL operator
-│   └── 14-cert-manager.tf     # Cert-Manager for SSL certificates
-├── helm/                       # Helm charts for applications
-├── ansible/                    # Ansible playbooks and roles
-├── application/                # Application source code
-├── .gitignore                 # Comprehensive ignore rules
-└── README.md                  # This documentation
+├── infrastructure/                    # Terraform IaC configurations
+│   ├── 01-provider.tf                # Multi-provider configuration (AWS, Helm, Kubernetes, kubectl, TLS)
+│   ├── 02-backend.tf                 # S3 backend with state locking
+│   ├── 03-variables.tf               # Variable definitions with defaults
+│   ├── 04-vpc-networking.tf          # VPC, subnets, NAT gateway, security groups
+│   ├── 05-eks-cluster.tf             # EKS cluster configuration
+│   ├── 06-ebs-csi.tf                 # EBS CSI driver with OIDC provider
+│   ├── 07-nodegroup.tf               # EKS node groups with auto-scaling
+│   ├── 08-monitoring.tf              # Prometheus, Grafana, AlertManager (UI config)
+│   ├── 09-argocd.tf                  # ArgoCD GitOps platform
+│   ├── 10-logging.tf                 # ECK-based ELK stack
+│   ├── 11-outputs.tf                 # Infrastructure outputs
+│   ├── 12-ecr.tf                     # Amazon ECR container registry
+│   ├── 13-cloudnative-pg.tf          # CloudNativePG PostgreSQL operator
+│   ├── 14-cert-manager.tf            # Cert-Manager for SSL certificates
+│   ├── 15-vault.tf                   # HashiCorp Vault deployment
+│   ├── 16-cluster-autoscaler.tf      # Cluster autoscaler with YAML deployment
+│   └── cluster-autoscaler-deployment.yaml  # Cluster autoscaler YAML manifest
+├── helm/                             # Helm charts for applications
+├── ansible/                          # Ansible playbooks and roles
+├── application/                      # Application source code
+├── .gitignore                       # Comprehensive ignore rules
+└── README.md                        # This documentation
 ```
 
 ## 🚀 Prerequisites
@@ -126,7 +134,15 @@ First, create the S3 bucket for Terraform state:
 aws s3 mb s3://devops-cluster-state-bucket --region us-east-1
 ```
 
-### 2. Deploy Infrastructure
+### 2. Configure Variables (Optional)
+
+All variables have sensible defaults in `infrastructure/03-variables.tf`. You can override them if needed:
+
+- **Email**: `muthurikennedy082@gmail.com` (default for Let's Encrypt)
+- **Region**: `us-east-1` (default)
+- **Cluster**: `production_eks` (default)
+
+### 3. Deploy Infrastructure
 
 ```bash
 cd infrastructure/
@@ -141,7 +157,18 @@ terraform plan
 terraform apply
 ```
 
-### 3. Configure kubectl
+**What gets deployed:**
+
+- ✅ EKS cluster with auto-scaling nodes (2-12 nodes)
+- ✅ Cluster autoscaler with YAML deployment
+- ✅ Monitoring stack (Prometheus + Grafana + AlertManager)
+- ✅ ELK stack for logging
+- ✅ Vault for secrets management
+- ✅ ArgoCD for GitOps
+- ✅ PostgreSQL operator
+- ✅ Cert-manager for SSL
+
+### 4. Configure kubectl
 
 ```bash
 # Update kubeconfig for EKS cluster
@@ -149,9 +176,40 @@ aws eks update-kubeconfig --region us-east-1 --name production_eks
 
 # Verify cluster access
 kubectl get nodes
+
+# Check all pods are running
+kubectl get pods --all-namespaces
 ```
 
 ## 🌐 Service Access
+
+### **Grafana Dashboard (Metrics & Monitoring)**
+
+```bash
+# Get Grafana LoadBalancer URL
+kubectl get service prometheus-stack-grafana -n monitoring
+
+# Access Grafana
+# Username: admin
+# Password: admin123!
+```
+
+**Setting up Alerts in Grafana:**
+
+1. Open Grafana in your browser
+2. Go to **Alerting** → **Notification channels**
+3. Add **Email** notification channel
+4. Configure SMTP settings through the UI
+5. Create alert rules for your dashboards
+
+### **Prometheus (Metrics Storage)**
+
+```bash
+# Get Prometheus LoadBalancer URL
+kubectl get service prometheus-stack-kube-prom-prometheus -n monitoring
+
+# Access Prometheus UI for queries and targets
+```
 
 ### **Kibana Dashboard (Log Visualization)**
 
@@ -171,12 +229,23 @@ kubectl get service kibana-kb-http -n elastic-stack
 4. Choose `@timestamp` as time field
 5. Go to **Discover** to view logs
 
-### **Grafana Dashboard (Metrics)**
+### **HashiCorp Vault (Secrets Management)**
 
 ```bash
-# Get Grafana LoadBalancer URL
-kubectl get service prometheus-grafana -n monitoring
+# Get Vault LoadBalancer URL
+kubectl get service vault -n vault
+
+# Access Vault UI
+# Initialize with 3 key shares, 2 key threshold (recommended for demo)
 ```
+
+**Vault Setup:**
+
+1. Open Vault UI in browser
+2. Initialize with your preferred key shares/threshold
+3. **Save the unseal keys and root token securely**
+4. Unseal Vault with the required number of keys
+5. Login with root token
 
 ### **ArgoCD Dashboard (GitOps)**
 
@@ -187,6 +256,41 @@ kubectl get service argocd-server -n argocd
 # Get admin password
 kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
 ```
+
+### **AlertManager (Alert Management)**
+
+```bash
+# Port-forward to access AlertManager
+kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-alertmanager 9093:9093
+
+# Access at http://localhost:9093
+```
+
+**Configure Email Alerts:**
+
+1. Port-forward to AlertManager
+2. Configure notification receivers via UI
+3. Set up routing rules for different alert severities
+
+### **Cluster Autoscaler (Auto-scaling)**
+
+```bash
+# Check cluster autoscaler status
+kubectl get pods -n kube-system | grep cluster-autoscaler
+
+# View autoscaler logs
+kubectl logs -n kube-system deployment/cluster-autoscaler
+
+# Check current node count
+kubectl get nodes
+```
+
+**Auto-scaling Features:**
+
+- ✅ Automatic node scaling (2-12 nodes)
+- ✅ Auto-discovery of Auto Scaling Groups
+- ✅ Pod-driven scaling decisions
+- ✅ IRSA authentication for AWS API access
 
 ### **Elasticsearch (Direct Access)**
 
@@ -286,9 +390,18 @@ kubectl describe certificate myapp-tls
 ### **EKS Cluster Configuration**
 
 - **Cluster Name**: `production_eks`
-- **Version**: Latest supported version
-- **Node Groups**: Auto-scaling across multiple AZs
+- **Version**: Latest supported EKS version
+- **Node Groups**: Auto-scaling (2-12 nodes) across multiple AZs
 - **Instance Types**: Optimized for cost and performance
+- **Cluster Autoscaler**: YAML-based deployment with IRSA authentication
+
+### **Auto-scaling Configuration**
+
+- **Cluster Autoscaler**: v1.30.0 with auto-discovery
+- **Node Scaling**: 2 minimum, 12 maximum nodes
+- **Scaling Triggers**: Pod resource requests and scheduling failures
+- **AWS Integration**: IRSA for secure AWS API access
+- **Tags**: Auto-discovery via `k8s.io/cluster-autoscaler/enabled` and cluster name tags
 
 ### **VPC Configuration**
 
@@ -299,11 +412,19 @@ kubectl describe certificate myapp-tls
 
 ### **Storage Configuration**
 
-- **EBS CSI Driver**: v1.48.0 with OIDC authentication
+- **EBS CSI Driver**: Latest version with OIDC authentication
 - **Storage Class**: `gp2` (default)
 - **Persistent Volumes**: Automatic provisioning for stateful apps
+- **Monitoring Storage**: Prometheus (20Gi), Grafana (10Gi), AlertManager (5Gi)
 
 ### **Observability Stack Details**
+
+#### Monitoring Stack
+
+- **Prometheus**: Metrics collection with 15-day retention and persistent storage
+- **Grafana**: Visualization dashboards with persistent storage (admin/admin123!)
+- **AlertManager**: Alert routing and management (configure via UI)
+- **Service Discovery**: Automatic metrics endpoint discovery
 
 #### ELK Stack (Logging)
 
@@ -312,11 +433,15 @@ kubectl describe certificate myapp-tls
 - **Fluent Bit**: DaemonSet for container log collection
 - **Index Pattern**: `fluent-bit*` for log visualization
 
-#### Monitoring Stack
+### **Secrets Management**
 
-- **Prometheus**: Metrics collection and storage
-- **Grafana**: Metrics visualization dashboards
-- **Service Monitors**: Automatic discovery of metrics endpoints
+#### HashiCorp Vault
+
+- **Version**: 0.31.0 (latest Helm chart)
+- **Storage**: Persistent 5Gi storage
+- **Access**: LoadBalancer for UI access
+- **High Availability**: Single instance (can be scaled)
+- **Integration**: Ready for application secret injection
 
 ### **Security & SSL Configuration**
 
@@ -324,16 +449,28 @@ kubectl describe certificate myapp-tls
 
 - **Version**: v1.15.3 (OCI Helm chart)
 - **Certificate Authority**: Let's Encrypt production
-- **Email Notifications**: `muthurikennedy082@gmail.com`
+- **Email Notifications**: Configurable via variables
 - **Challenge Method**: HTTP-01 validation
-- **Ingress Class**: nginx
 - **Auto-Renewal**: 60 days before expiration
 - **ClusterIssuer**: `letsencrypt-prod` for production certificates
 
-#### GitOps
+### **Database Management**
 
-- **ArgoCD**: Application deployment and synchronization
-- **LoadBalancer**: External access for UI and API
+#### CloudNativePG
+
+- **PostgreSQL Operator**: Latest version
+- **High Availability**: Multi-instance cluster support
+- **Backup Integration**: Built-in backup and recovery
+- **Monitoring**: Prometheus metrics integration
+
+### **GitOps**
+
+#### ArgoCD
+
+- **Version**: Latest stable release
+- **Access**: LoadBalancer for UI and CLI access
+- **Authentication**: Initial admin user with generated password
+- **Repository Integration**: Git-based application deployment
 
 ## 🔐 Security Best Practices
 
@@ -360,6 +497,52 @@ kubectl describe certificate myapp-tls
 
 ### **Common Issues**
 
+#### Cluster Autoscaler Not Scaling
+
+```bash
+# Check cluster autoscaler pod status
+kubectl get pods -n kube-system | grep cluster-autoscaler
+
+# View autoscaler logs
+kubectl logs -n kube-system deployment/cluster-autoscaler
+
+# Check auto scaling group tags
+aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[?contains(Tags[?Key==`k8s.io/cluster-autoscaler/enabled`].Value, `true`)].AutoScalingGroupName'
+
+# Check pending pods that should trigger scaling
+kubectl get pods --all-namespaces | grep Pending
+```
+
+#### Vault Authentication Issues
+
+```bash
+# Check Vault pod status
+kubectl get pods -n vault
+
+# Check Vault status
+kubectl exec -n vault vault-0 -- vault status
+
+# View Vault logs
+kubectl logs -n vault vault-0
+
+# If sealed, you need to unseal with your keys
+kubectl exec -n vault vault-0 -- vault operator unseal <unseal-key>
+```
+
+#### Monitoring Alerts Not Working
+
+```bash
+# Check Grafana and AlertManager pods
+kubectl get pods -n monitoring
+
+# Access AlertManager to configure notifications
+kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-alertmanager 9093:9093
+
+# Check Prometheus targets
+kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-prometheus 9090:9090
+# Visit http://localhost:9090/targets
+```
+
 #### EBS CSI Driver Not Working
 
 ```bash
@@ -368,6 +551,9 @@ kubectl get pods -n kube-system | grep ebs
 
 # Check storage classes
 kubectl get storageclass
+
+# Verify OIDC provider
+aws eks describe-cluster --name production_eks --query 'cluster.identity.oidc.issuer'
 ```
 
 #### Kibana Not Accessible
@@ -378,32 +564,23 @@ kubectl logs -n elastic-stack -l kibana.k8s.elastic.co/name=kibana
 
 # Check service status
 kubectl get service kibana-kb-http -n elastic-stack
+
+# Check Elasticsearch cluster health
+kubectl port-forward -n elastic-stack svc/elasticsearch-es-http 9200:9200
+curl -X GET "localhost:9200/_cluster/health?pretty"
 ```
 
-#### Elasticsearch Yellow Status
-
-This is normal for single-node clusters. For production, increase replica count.
-
-#### Cert-Manager Certificate Issues
+#### PostgreSQL Operator Issues
 
 ```bash
-# Check cert-manager pods
-kubectl get pods -n cert-manager
+# Check CloudNativePG operator status
+kubectl get pods -n cnpg-system
 
-# Check certificate status
-kubectl get certificates -A
+# View operator logs
+kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg
 
-# Describe problematic certificate
-kubectl describe certificate <certificate-name> -n <namespace>
-
-# Check certificate challenges
-kubectl get challenges -A
-
-# View cert-manager logs
-kubectl logs -n cert-manager -l app.kubernetes.io/name=cert-manager
-
-# Force certificate renewal
-kubectl annotate certificate <certificate-name> force-renewal=$(date +%s) -n <namespace>
+# Check PostgreSQL clusters
+kubectl get clusters -A
 ```
 
 ### **Useful Commands**
@@ -412,15 +589,30 @@ kubectl annotate certificate <certificate-name> force-renewal=$(date +%s) -n <na
 # Get all pods across namespaces
 kubectl get pods --all-namespaces
 
+# Check all services with external access
+kubectl get services --all-namespaces | grep LoadBalancer
+
+# Monitor cluster autoscaler decisions
+kubectl logs -n kube-system deployment/cluster-autoscaler -f
+
+# Check node resource usage
+kubectl top nodes
+kubectl top pods --all-namespaces
+
+# View all persistent volumes
+kubectl get pv
+
+# Check certificate status
+kubectl get certificates -A
+
+# Monitor Vault status
+kubectl exec -n vault vault-0 -- vault status
+
 # Check Terraform state
 terraform state list
 
-# View LoadBalancer services
-kubectl get services --all-namespaces | grep LoadBalancer
-
-# Check cluster resources
-kubectl top nodes
-kubectl top pods --all-namespaces
+# View infrastructure outputs
+terraform output
 ```
 
 ## 🧹 Cleanup

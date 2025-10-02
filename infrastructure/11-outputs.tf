@@ -29,3 +29,9 @@ output "cert_manager_status" {
   description = "Check cert-manager status"
   value       = "kubectl get pods -n cert-manager"
 }
+
+# Vault Output
+output "vault_status" {
+  description = "Check Vault status"
+  value       = "kubectl get pods -n vault"
+}

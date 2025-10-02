@@ -1,7 +1,4 @@
-# Monitoring Stack - Prometheus & Grafana
-# Simple deployment using Helm charts
-
-# Prometheus Stack (includes Prometheus, Grafana, AlertManager, Node Exporter)
+# Monitoring Stack with Email Alerts
 resource "helm_release" "prometheus_stack" {
   name             = "prometheus-stack"
   repository       = "https://prometheus-community.github.io/helm-charts"
@@ -10,28 +7,63 @@ resource "helm_release" "prometheus_stack" {
   namespace        = "monitoring"
   create_namespace = true
 
-  # Basic values for the prometheus stack
   values = [
     yamlencode({
-      # Grafana configuration - expose via LoadBalancer
+      # Grafana
       grafana = {
         service = {
           type = "LoadBalancer"
         }
         adminPassword = "admin123!"
+        persistence = {
+          enabled          = true
+          size             = "10Gi"
+          storageClassName = "gp2"
+        }
       }
 
-      # Prometheus configuration - expose via LoadBalancer
+      # Prometheus
       prometheus = {
         service = {
           type = "LoadBalancer"
         }
+        prometheusSpec = {
+          retention = "15d"
+          storageSpec = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = "gp2"
+                accessModes      = ["ReadWriteOnce"]
+                resources = {
+                  requests = {
+                    storage = "20Gi"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
 
-      # Keep AlertManager internal
+      # AlertManager
       alertmanager = {
         service = {
           type = "ClusterIP"
+        }
+        alertmanagerSpec = {
+          storage = {
+            volumeClaimTemplate = {
+              spec = {
+                storageClassName = "gp2"
+                accessModes      = ["ReadWriteOnce"]
+                resources = {
+                  requests = {
+                    storage = "5Gi"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     })
