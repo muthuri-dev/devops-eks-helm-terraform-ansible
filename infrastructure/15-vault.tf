@@ -8,6 +8,7 @@ resource "helm_release" "vault" {
   namespace  = "vault"
   create_namespace = true
 
+
   set {
     name  = "server.ha.enabled"
     value = "false"
