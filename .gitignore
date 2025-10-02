@@ -64,7 +64,6 @@ coverage/
 
 # AWS CLI credentials (if accidentally placed in project)
 credentials
-config
 
 # Helm
 charts/

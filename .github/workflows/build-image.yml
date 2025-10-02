@@ -127,7 +127,7 @@ jobs:
               run: |
                   git add helm/golang-app/values.yaml
                   if ! git diff --cached --quiet; then
-                    git commit -m "ci: update ${{ env.IMAGE_NAME }} image to ${{ steps.get-tag.outputs.TAG }} [skip ci]"
+                    git commit -m "ci: update ${{ env.IMAGE_NAME }} image to ${{ steps.get-tag.outputs.TAG }}"
                     git push origin main
                   else
                     echo "No changes to commit."

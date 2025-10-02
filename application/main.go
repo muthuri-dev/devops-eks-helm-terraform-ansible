@@ -17,10 +17,10 @@ func main() {
 		log.Println("No .env file found, using environment variables")
 	}
 
-	// Load configuration
+	// Load configuration.
 	cfg := config.LoadConfig()
 
-	// Initialize database
+	// Initialize database.
 	if err := database.InitDB(cfg); err != nil {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
