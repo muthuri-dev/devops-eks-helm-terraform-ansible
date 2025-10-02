@@ -12,8 +12,11 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the application with version information
-RUN CGO_ENABLED=0 GOOS=linux go build \
+# Set Go environment and build
+ENV GO111MODULE=on
+ENV GOFLAGS=-mod=mod
+RUN go mod tidy && \
+    CGO_ENABLED=0 GOOS=linux go build \
     -ldflags="-w -s -X main.version=${VERSION}" \
     -o main .
 

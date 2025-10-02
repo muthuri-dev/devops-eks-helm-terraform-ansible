@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"github.io/muthuri-dev/devops-eks-helm-terraform-ansible/application/handlers"
+	"events-api/handlers"
 
 	"github.com/gin-gonic/gin"
 )
