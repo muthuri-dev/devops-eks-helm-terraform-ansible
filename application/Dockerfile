@@ -1,5 +1,11 @@
 FROM golang:1.25-alpine
 
+# Set environment variables for Go modules
+ENV GO111MODULE=on
+ENV GOPATH=""
+ENV GOPROXY=https://proxy.golang.org,direct
+ENV GOSUMDB=sum.golang.org
+
 WORKDIR /app
 
 # Copy go mod files first
@@ -11,10 +17,14 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Verify module setup and build
-RUN go mod verify && \
-    go list -m && \
-    CGO_ENABLED=0 GOOS=linux go build -v -o main .
+# Debug: Show what files we have and module info
+RUN ls -la && \
+    go env GOMOD && \
+    go env GO111MODULE && \
+    go mod graph | head -5
+
+# Build the application
+RUN CGO_ENABLED=0 GOOS=linux go build -o main .
 
 EXPOSE 8080
 
