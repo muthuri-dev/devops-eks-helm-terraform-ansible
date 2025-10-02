@@ -8,11 +8,9 @@ on:
             - "application/**"
 
 env:
-    GH_VERSION: ${{ github.sha }}
-    IMAGE_NAME: golang-app
-    VERSION_NUMBER: ${{ github.run_number }}
     AWS_REGION: us-east-1
     ECR_REPOSITORY: golang-app
+    IMAGE_NAME: golang-app
 
 jobs:
     build-and-publish:
@@ -46,20 +44,36 @@ jobs:
               id: login-ecr
               uses: aws-actions/amazon-ecr-login@v2
 
-            - name: Build Docker Image
+            - name: Determine image tag
+              id: determine-tag
               run: |
-                  cd application
-                  docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }} .
-                  docker tag ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+                  TAG=$(git rev-parse --short HEAD)
+                  echo "TAG=$TAG" >> $GITHUB_OUTPUT
+                  echo "VERSION=$TAG" >> $GITHUB_OUTPUT
 
-            - name: Push to ECR
+            - name: Build Docker image
               run: |
-                  docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }}
-                  docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+                  TAG=${{ steps.determine-tag.outputs.TAG }}
+                  REPOSITORY="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}"
+
+                  cd application
+                  docker build \
+                    --build-arg VERSION=${{ steps.determine-tag.outputs.VERSION }} \
+                    -t $REPOSITORY:$TAG \
+                    -t $REPOSITORY:latest \
+                    .
+
+            - name: Push Docker image
+              run: |
+                  TAG=${{ steps.determine-tag.outputs.TAG }}
+                  REPOSITORY="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}"
+
+                  docker push $REPOSITORY:$TAG
+                  docker push $REPOSITORY:latest
 
             - name: Output Image name
               run: |
-                  echo "Image pushed to ECR: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.GH_VERSION }}"
+                  echo "Image pushed to ECR: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ steps.determine-tag.outputs.TAG }}"
 
     update-helm-chart:
         permissions:
@@ -91,20 +105,29 @@ jobs:
               id: login-ecr
               uses: aws-actions/amazon-ecr-login@v2
 
+            - name: Get image tag
+              id: get-tag
+              run: |
+                  TAG=$(git rev-parse --short HEAD)
+                  echo "TAG=$TAG" >> $GITHUB_OUTPUT
+
             - name: Setup Git Config
               uses: fregante/setup-git-user@v2
 
             - name: Update image in helm values.yaml
               run: |
+                  TAG=${{ steps.get-tag.outputs.TAG }}
+                  REPOSITORY="${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}"
+
                   echo "Updating image repository and tag in helm/golang-app/values.yaml"
-                  sed -i "s|repository: .*|repository: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}|" helm/golang-app/values.yaml
-                  sed -i "s|tag: .*|tag: \"${{ env.GH_VERSION }}\"|" helm/golang-app/values.yaml
+                  sed -i "s|repository: .*|repository: $REPOSITORY|" helm/golang-app/values.yaml
+                  sed -i "s|tag: .*|tag: \"$TAG\"|" helm/golang-app/values.yaml
 
             - name: Commit & push changes
               run: |
                   git add helm/golang-app/values.yaml
                   if ! git diff --cached --quiet; then
-                    git commit -m "ci: update ${{ env.IMAGE_NAME }} image to ${{ env.GH_VERSION }} [skip ci]"
+                    git commit -m "ci: update ${{ env.IMAGE_NAME }} image to ${{ steps.get-tag.outputs.TAG }} [skip ci]"
                     git push origin main
                   else
                     echo "No changes to commit."
