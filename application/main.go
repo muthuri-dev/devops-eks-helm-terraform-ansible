@@ -33,7 +33,7 @@ func main() {
 	// Initialize Gin router
 	router := gin.Default()
 
-	// Add CORS middleware
+	// Add CORS middleware.
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
@@ -47,7 +47,7 @@ func main() {
 		c.Next()
 	})
 
-	// Setup routes
+	// Setup routes.
 	routes.SetupRoutes(router)
 
 	// Start server
