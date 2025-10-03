@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 1
+replicaCount: 2
 
 image:
   repository: 913024026099.dkr.ecr.us-east-1.amazonaws.com/golang-app
@@ -22,18 +22,21 @@ serviceAccount:
 
 # This is for setting Kubernetes Annotations to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
-podAnnotations:
-  vault.hashicorp.com/agent-inject: "true"
-  vault.hashicorp.com/agent-inject-secret-database: "kv/data/database"
-  vault.hashicorp.com/agent-inject-template-database: |
-    {{- with secret "kv/data/database" -}}
-    export DB_HOST="{{ .Data.data.host }}"
-    export DB_PORT="{{ .Data.data.port }}"
-    export DB_NAME="{{ .Data.data.name }}"
-    export DB_USER="{{ .Data.data.user }}"
-    export DB_PASSWORD="{{ .Data.data.password }}"
-    {{- end -}}
-  vault.hashicorp.com/role: "golang-app"
+podAnnotations: {}
+
+# Environment variables for the golang application
+# Using ArgoCD Vault Plugin syntax to pull secrets from Vault
+env:
+  - name: DB_HOST
+    value: <path:kv/data/database#host>
+  - name: DB_PORT
+    value: <path:kv/data/database#port>
+  - name: DB_NAME
+    value: <path:kv/data/database#name>
+  - name: DB_USER
+    value: <path:kv/data/database#user>
+  - name: DB_PASSWORD
+    value: <path:kv/data/database#password>
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
