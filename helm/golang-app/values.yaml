@@ -58,8 +58,13 @@ service:
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: true
-  host: api.shipcodes.tech
-
+  className: ""
+  annotations: {}
+  hosts:
+    - host: api.shipcodes.tech
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
