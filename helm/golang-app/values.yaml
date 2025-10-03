@@ -26,6 +26,7 @@ podAnnotations: {}
 
 # Environment variables for the golang application
 # Using ArgoCD Vault Plugin syntax to pull secrets from Vault
+# Note: ArgoCD must be configured with argocd-vault-plugin for these to work
 env:
   - name: DB_HOST
     value: <path:kv/data/database#host>
@@ -37,6 +38,9 @@ env:
     value: <path:kv/data/database#user>
   - name: DB_PASSWORD
     value: <path:kv/data/database#password>
+  - name: DB_SSL_MODE
+    value: "disable"
+
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 podLabels: {}
