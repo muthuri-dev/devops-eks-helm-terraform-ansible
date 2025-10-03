@@ -33,6 +33,7 @@ vault:
   address: "http://a7f90ff1105d746a5a785087b130fc75-232304810.us-east-1.elb.amazonaws.com:8200"
   role: "golang-app"
   refreshInterval: "1h"
+  # Token is provided via pre-created 'vault-bootstrap-token' secret
 
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
