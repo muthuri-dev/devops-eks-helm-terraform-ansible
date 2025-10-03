@@ -1,7 +1,7 @@
 # Monitoring Stack with Email Alerts
 resource "helm_release" "prometheus_stack" {
   name             = "prometheus-stack"
-  repository       = "https://prometheus-community.github.com/helm-charts"
+  repository       = "https://prometheus-community.github.io/helm-charts"
   chart            = "kube-prometheus-stack"
   version          = "~> 61.0"
   namespace        = "monitoring"

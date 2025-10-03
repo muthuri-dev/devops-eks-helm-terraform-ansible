@@ -24,24 +24,15 @@ serviceAccount:
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
 podAnnotations: {}
 
-# Environment variables for the golang application
-# Using ArgoCD Vault Plugin syntax to pull secrets from Vault
-# These match the actual keys stored in vault at kv/database
-env:
-  - name: DB_HOST
-    value: <path:kv/data/database#DB_HOST>
-  - name: DB_PORT
-    value: <path:kv/data/database#DB_PORT>
-  - name: DB_NAME
-    value: <path:kv/data/database#DB_NAME>
-  - name: DB_USER
-    value: <path:kv/data/database#DB_USER>
-  - name: DB_PASSWORD
-    value: <path:kv/data/database#DB_PASSWORD>
-  - name: DB_SSL_MODE
-    value: <path:kv/data/database#DB_SSL_MODE>
-  - name: PORT
-    value: "8080"
+# All environment variables (including database secrets and app config)
+# are automatically loaded from External Secrets Operator via Vault
+# No need to define env variables here - they come from kv/database secret
+
+# Vault configuration for External Secrets Operator
+vault:
+  address: "http://a7f90ff1105d746a5a785087b130fc75-232304810.us-east-1.elb.amazonaws.com:8200"
+  role: "golang-app"
+  refreshInterval: "1h"
 
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
