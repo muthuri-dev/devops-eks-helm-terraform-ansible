@@ -44,10 +44,10 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          {{- with .Values.env }}
-          env:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+          # Load all environment variables from External Secrets Operator created secret
+          envFrom:
+            - secretRef:
+                name: {{ include "..fullname" . }}-database-secrets
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
