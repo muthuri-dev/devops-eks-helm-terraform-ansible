@@ -55,17 +55,18 @@ securityContext:
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: ClusterIP
+  type: LoadBalancer # Changed to LoadBalancer for external access
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 8080
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: true # Enable ingress
-  className: ""
+  className: "alb" # Use AWS Load Balancer Controller
   annotations:
-    {}
-    # kubernetes.io/ingress.class: nginx
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
     # kubernetes.io/tls-acme: "true"
   hosts:
     - host: api.shipcodes.tech
@@ -97,7 +98,7 @@ readinessProbe:
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
-  enabled: true # Enable HPA
+  enabled: false # Disable HPA since metrics API is not available
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
