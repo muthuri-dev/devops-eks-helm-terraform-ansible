@@ -51,20 +51,20 @@ securityContext:
 # This is for setting up a service more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/
 service:
   # This sets the service type more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types
-  type: LoadBalancer # Changed to LoadBalancer for external access
+  type: ClusterIP # Use ClusterIP since NGINX Ingress will handle external access
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 8080
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
 ingress:
   enabled: true
-  className: ""
+  className: "nginx" # Use NGINX Ingress Controller
   annotations: {}
   hosts:
     - host: api.shipcodes.tech
       paths:
         - path: /
-          pathType: ImplementationSpecific
+          pathType: Prefix # Change from ImplementationSpecific
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
