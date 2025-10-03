@@ -40,10 +40,8 @@ env:
     value: <path:kv/data/database#DB_PASSWORD>
   - name: DB_SSL_MODE
     value: <path:kv/data/database#DB_SSL_MODE>
-  - name: GIN_MODE
-    value: <path:kv/data/database#GIN_MODE>
   - name: PORT
-    value: <path:kv/data/database#PORT>
+    value: "8080"
 
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
