@@ -35,3 +35,10 @@ output "vault_status" {
   description = "Check Vault status"
   value       = "kubectl get pods -n vault"
 }
+
+
+# Output the ingress controller load balancer hostname
+output "ingress_controller_hostname" {
+  description = "Hostname of the ingress controller load balancer"
+  value       = "Run: kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
+}
