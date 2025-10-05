@@ -3,7 +3,7 @@ replicaCount: 2
 image:
   repository: 913024026099.dkr.ecr.us-east-1.amazonaws.com/golang-app
   pullPolicy: IfNotPresent
-  tag: "0faaa32"
+  tag: "6b46da7"
 
 imagePullSecrets: []
 nameOverride: "golang-app"
