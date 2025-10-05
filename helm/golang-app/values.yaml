@@ -9,10 +9,6 @@ imagePullSecrets: []
 nameOverride: "golang-app"
 fullnameOverride: "golang-app"
 
-envFrom:
-  - secretRef:
-      name: golang-app-secrets
-
 serviceAccount:
   create: true
   automount: true
