@@ -9,6 +9,10 @@ imagePullSecrets: []
 nameOverride: "golang-app"
 fullnameOverride: "golang-app"
 
+envFrom:
+  - secretRef:
+      name: golang-app-secrets
+
 serviceAccount:
   create: true
   automount: true
@@ -23,13 +27,6 @@ podAnnotations: {}
 # All environment variables (including database secrets and app config)
 # are automatically loaded from External Secrets Operator via Vault
 # No need to define env variables here - they come from kv/database secret
-
-# Vault configuration for External Secrets Operator
-vault:
-  address: "http://vault.vault.svc.cluster.local:8200"
-  role: "golang-app"
-  refreshInterval: "1h"
-  # Token is provided via pre-created 'vault-bootstrap-token' secret
 
 # This is for setting Kubernetes Labels to a Pod.
 # For more information checkout: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
