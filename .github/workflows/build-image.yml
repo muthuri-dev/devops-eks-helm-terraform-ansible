@@ -30,8 +30,8 @@ jobs:
                   token: ${{ secrets.VAULT_TOKEN }}
                   tlsSkipVerify: true
                   secrets: |
-                      kv/data/github_workflows aws_access_key_id | AWS_ACCESS_KEY_ID ;
-                      kv/data/github_workflows aws_secret_access_key | AWS_SECRET_ACCESS_KEY
+                      kv/data/github_workflow aws_access_key_id | AWS_ACCESS_KEY_ID ;
+                      kv/data/github_workflow aws_secret_access_key | AWS_SECRET_ACCESS_KEY
 
             - name: Configure AWS credentials
               uses: aws-actions/configure-aws-credentials@v4
