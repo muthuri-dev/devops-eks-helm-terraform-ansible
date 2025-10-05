@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	// Load environment variables from .env file if it exists
+	// Load environment variables from .env file ifor db connection
 	if err := godotenv.Load(); err != nil {
 		log.Println("No .env file found, using environment variables")
 	}
