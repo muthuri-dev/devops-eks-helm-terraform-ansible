@@ -1,5 +1,4 @@
-# EBS CSI Driver for EKS - Required for persistent storage
-# This allows EKS to provision EBS volumes for stateful applications
+# EBS CSI Driver for EKS 
 
 # IAM role for EBS CSI driver
 resource "aws_iam_role" "ebs_csi_role" {

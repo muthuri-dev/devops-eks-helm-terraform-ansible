@@ -1,205 +1,88 @@
 
-# ELK Stack using ECK (Elastic Cloud on Kubernetes) 
-# ECK operator
-resource "helm_release" "eck_operator" {
-  name             = "elastic-operator"
+#  EFK Stack using Official Helm Charts
+resource "helm_release" "elasticsearch" {
+  name             = "elasticsearch"
   repository       = "https://helm.elastic.co"
-  chart            = "eck-operator"
-  namespace        = "elastic-system"
+  chart            = "elasticsearch"
+  version          = "8.5.1"
+  namespace        = "elastic-stack"
   create_namespace = true
+
+  set {
+    name  = "replicas"
+    value = "1"
+  }
+  set {
+    name  = "persistence.enabled"
+    value = "true"
+  }
+  set {
+    name  = "volumeClaimTemplate.storageClassName"
+    value = "gp2"
+  }
 
   depends_on = [aws_eks_cluster.production_eks_cluster]
 }
+resource "helm_release" "kibana" {
+  name             = "kibana"
+  repository       = "https://helm.elastic.co"
+  chart            = "kibana"
+  version          = "8.5.1"
+  namespace        = "elastic-stack"
+  create_namespace = true
 
-# Elasticsearch cluster using kubectl provider
-resource "kubectl_manifest" "elasticsearch" {
-  yaml_body = yamlencode({
-    apiVersion = "elasticsearch.k8s.elastic.co/v1"
-    kind       = "Elasticsearch"
-    metadata = {
-      name      = "elasticsearch"
-      namespace = "elastic-stack"
-    }
-    spec = {
-      version = "8.5.1"
-      nodeSets = [
-        {
-          name  = "default"
-          count = 1
-          config = {
-            "node.store.allow_mmap"                = false
-            "xpack.security.enabled"              = false
-            "xpack.security.enrollment.enabled"   = false
-            "xpack.security.http.ssl.enabled"     = false
-            "xpack.security.transport.ssl.enabled" = false
-          }
-          volumeClaimTemplates = [
-            {
-              metadata = {
-                name = "elasticsearch-data"
-              }
-              spec = {
-                accessModes = ["ReadWriteOnce"]
-                resources = {
-                  requests = {
-                    storage = "5Gi"
-                  }
-                }
-                storageClassName = "gp2"
-              }
-            }
-          ]
-          podTemplate = {
-            spec = {
-              containers = [
-                {
-                  name = "elasticsearch"
-                  resources = {
-                    limits = {
-                      memory = "2Gi"
-                      cpu    = "1"
-                    }
-                    requests = {
-                      memory = "1Gi"
-                      cpu    = "500m"
-                    }
-                  }
-                }
-              ]
-            }
-          }
-        }
-      ]
-      http = {
-        service = {
-          spec = {
-            type = "ClusterIP"
-          }
-        }
-      }
-    }
-  })
-
-  depends_on = [helm_release.eck_operator]
+  depends_on = [helm_release.elasticsearch]
 }
 
-# Create namespace first
-resource "kubernetes_namespace" "elastic_stack" {
+# Fluentd
+resource "helm_release" "fluentd" {
+  name             = "fluentd"
+  repository       = "https://fluent.github.io/helm-charts"
+  chart            = "fluentd"
+  version          = "0.5.3"
+  namespace        = "elastic-stack"
+  create_namespace = true
+
+  depends_on = [helm_release.elasticsearch]
+}
+
+# Kibana Ingress with TLS
+resource "kubernetes_ingress_v1" "kibana_ingress" {
   metadata {
-    name = "elastic-stack"
-  }
-}
-
-# Kibana deployment using kubectl provider
-resource "kubectl_manifest" "kibana" {
-  yaml_body = yamlencode({
-    apiVersion = "kibana.k8s.elastic.co/v1"
-    kind       = "Kibana"
-    metadata = {
-      name      = "kibana"
-      namespace = "elastic-stack"
+    name      = "kibana-ingress"
+    namespace = "elastic-stack"
+    annotations = {
+      "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
     }
-    spec = {
-      version = "8.5.1"
-      count   = 1
-      elasticsearchRef = {
-        name = "elasticsearch"
-      }
-      config = {
-        "server.publicBaseUrl"            = "http://localhost:5601"
-        "elasticsearch.ssl.verificationMode" = "none"
-        "elasticsearch.hosts"             = ["http://elasticsearch-es-http:9200"]
-      }
-      podTemplate = {
-        spec = {
-          containers = [
-            {
-              name = "kibana"
-              resources = {
-                limits = {
-                  memory = "1Gi"
-                  cpu    = "500m"
-                }
-                requests = {
-                  memory = "512Mi"
-                  cpu    = "200m"
-                }
+  }
+
+  spec {
+    ingress_class_name = "nginx"
+    
+    tls {
+      hosts       = ["kibana.shipcodes.tech"]
+      secret_name = "kibana-tls"
+    }
+    
+    rule {
+      host = "kibana.shipcodes.tech"
+      http {
+        path {
+          path      = "/"
+          path_type = "Prefix"
+          backend {
+            service {
+              name = "kibana-kibana"
+              port {
+                number = 5601
               }
             }
-          ]
-        }
-      }
-      http = {
-        service = {
-          spec = {
-            type = "LoadBalancer"
           }
         }
       }
     }
-  })
+  }
 
-  depends_on = [kubectl_manifest.elasticsearch, kubernetes_namespace.elastic_stack]
-}
-
-# Fluent Bit for log collection (compatible with ECK)
-resource "helm_release" "fluent_bit" {
-  name       = "fluent-bit"
-  repository = "https://fluent.github.io/helm-charts"
-  chart      = "fluent-bit"
-  namespace  = "elastic-stack"
-
-  values = [
-    yamlencode({
-      config = {
-        service = <<-EOF
-          [SERVICE]
-              Daemon Off
-              Flush 1
-              Log_Level info
-              Parsers_File /fluent-bit/etc/parsers.conf
-              HTTP_Server On
-              HTTP_Listen 0.0.0.0
-              HTTP_Port 2020
-        EOF
-        
-        inputs = <<-EOF
-          [INPUT]
-              Name tail
-              Path /var/log/containers/*.log
-              multiline.parser docker, cri
-              Tag kube.*
-              Mem_Buf_Limit 50MB
-              Skip_Long_Lines On
-        EOF
-        
-        outputs = <<-EOF
-          [OUTPUT]
-              Name es
-              Match *
-              Host elasticsearch-es-http
-              Port 9200
-              Index fluent-bit
-              Type _doc
-              Suppress_Type_Name On
-              Retry_Limit False
-        EOF
-      }
-      
-      # Basic resources
-      resources = {
-        requests = {
-          cpu = "50m"
-          memory = "64Mi"
-        }
-        limits = {
-          cpu = "100m"
-          memory = "128Mi"
-        }
-      }
-    })
-  ]
-
-  depends_on = [kubectl_manifest.elasticsearch, kubernetes_namespace.elastic_stack]
+  depends_on = [helm_release.kibana, helm_release.nginx_ingress, helm_release.cert_manager]
 }
 
