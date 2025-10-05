@@ -47,7 +47,7 @@ spec:
           # Load all environment variables from External Secrets Operator created secret
           envFrom:
             - secretRef:
-                name: {{ include "..fullname" . }}-database-secrets
+                name: golang-app-secrets
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
