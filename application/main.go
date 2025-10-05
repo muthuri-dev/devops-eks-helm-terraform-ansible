@@ -25,7 +25,7 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 
-	// Run database migrations....
+	// Run database migrations
 	if err := database.AutoMigrate(); err != nil {
 		log.Fatalf("Failed to run database migrations: %v", err)
 	}
