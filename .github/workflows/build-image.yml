@@ -33,7 +33,7 @@ jobs:
               with:
                   url: ${{ secrets.VAULT_URL }}
                   token: ${{ secrets.VAULT_TOKEN }}
-                  tlsSkipVerify: false
+                  tlsSkipVerify: true
                   secrets: |
                       kv/data/github_workflow aws_access_key_id | AWS_ACCESS_KEY_ID ;
                       kv/data/github_workflow aws_secret_access_key | AWS_SECRET_ACCESS_KEY
@@ -94,7 +94,7 @@ jobs:
               with:
                   url: ${{ secrets.VAULT_URL }}
                   token: ${{ secrets.VAULT_TOKEN }}
-                  tlsSkipVerify: false
+                  tlsSkipVerify: true
                   secrets: |
                       kv/data/github_workflow aws_access_key_id | AWS_ACCESS_KEY_ID ;
                       kv/data/github_workflow aws_secret_access_key | AWS_SECRET_ACCESS_KEY
