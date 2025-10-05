@@ -17,6 +17,7 @@ spec:
 
   storage:
     size: 3Gi
+    storageClass: "gp2"
 
   managed:
     roles:
