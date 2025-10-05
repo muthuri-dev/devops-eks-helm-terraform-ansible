@@ -14,7 +14,7 @@ resource "helm_release" "cert_manager" {
   depends_on = [aws_eks_node_group.eks_node_group]
 }
 
-# Simple Let's Encrypt ClusterIssuer
+# Let's Encrypt ClusterIssuer
 resource "kubectl_manifest" "letsencrypt_issuer" {
   yaml_body = <<YAML
 apiVersion: cert-manager.io/v1
