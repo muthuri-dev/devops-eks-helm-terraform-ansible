@@ -42,3 +42,9 @@ output "ingress_controller_hostname" {
   description = "Hostname of the ingress controller load balancer"
   value       = "Run: kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
 }
+
+#instance
+output "ansible_worker_public_ip" {
+  description = "Public IP address of the Ansible worker instance"
+  value       = aws_instance.ansible-worker.public_ip
+}
