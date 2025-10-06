@@ -71,3 +71,4 @@ provider "kubernetes" {
     args = ["eks", "get-token", "--cluster-name", aws_eks_cluster.production_eks_cluster.name]
   }
 }
+

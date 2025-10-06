@@ -1,18 +1,18 @@
-# Elasticsearch - With fresh storage
+# Namespace for logging stack
+resource "kubernetes_namespace" "logging" {
+  metadata {
+    name = "logging"
+  }
+}
+
+# Elasticsearch using Helm
 resource "helm_release" "elasticsearch" {
   name       = "elasticsearch"
   repository = "https://helm.elastic.co"
   chart      = "elasticsearch"
+  namespace  = kubernetes_namespace.logging.metadata[0].name
   version    = "7.17.3"
-  namespace  = "elastic-stack"
-  create_namespace = true
   timeout    = 600
-
-  # Force new storage
-  set {
-    name  = "persistence.enabled"
-    value = "false"  # Use emptyDir instead of persistent storage
-  }
 
   set {
     name  = "replicas"
@@ -25,74 +25,136 @@ resource "helm_release" "elasticsearch" {
   }
 
   set {
-    name  = "esConfig.elasticsearch\\.yml"
-    value = "xpack.security.enabled: false"
+    name  = "resources.requests.memory"
+    value = "1Gi"
   }
-
-  # This ensures we get a fresh start
-  force_update = true
-}
-
-# Kibana - Keep as is
-resource "helm_release" "kibana" {
-  name       = "kibana"
-  repository = "https://helm.elastic.co"
-  chart      = "kibana"
-  version    = "7.17.3"
-  namespace  = "elastic-stack"
-
-  depends_on = [helm_release.elasticsearch]
-}
-
-# Fluent Bit - Keep as is
-resource "helm_release" "fluent_bit" {
-  name       = "fluent-bit"
-  repository = "https://fluent.github.io/helm-charts"
-  chart      = "fluent-bit"
-  namespace  = "elastic-stack"
-  timeout    = 300 
 
   set {
     name  = "resources.requests.cpu"
-    value = "1m"  
-  }
-
-  set {
-    name  = "resources.requests.memory"
-    value = "10Mi" 
+    value = "500m"
   }
 
   set {
     name  = "resources.limits.memory"
-    value = "50Mi"  
+    value = "1Gi"
   }
 
   set {
-    name  = "config.outputs"
-    value = "[OUTPUT]\n    Name es\n    Match *\n    Host elasticsearch-master\n    Port 9200\n    Logstash_Format On\n    Logstash_Prefix kubernetes\n    Retry_Limit False"
+    name  = "resources.limits.cpu"
+    value = "1000m"
+  }
+
+  set {
+    name  = "volumeClaimTemplate.resources.requests.storage"
+    value = "10Gi"
+  }
+
+  set {
+    name  = "volumeClaimTemplate.storageClassName"
+    value = "gp2"
+  }
+
+  set {
+    name  = "persistence.enabled"
+    value = "true"
+  }
+
+  set {
+    name  = "esJavaOpts"
+    value = "-Xmx512m -Xms512m"
+  }
+
+  values = [
+    yamlencode({
+      esConfig = {
+        "elasticsearch.yml" = "xpack.security.enabled: false\n"
+      }
+    })
+  ]
+
+  depends_on = [ kubernetes_namespace.logging ]
+}
+
+# Kibana using Helm
+resource "helm_release" "kibana" {
+  name       = "kibana"
+  repository = "https://helm.elastic.co"
+  chart      = "kibana"
+  namespace  = kubernetes_namespace.logging.metadata[0].name
+  version    = "7.17.3"
+
+  set {
+    name  = "elasticsearchHosts"
+    value = "http://elasticsearch-master:9200"
+  }
+
+  set {
+    name  = "resources.requests.memory"
+    value = "512Mi"
+  }
+
+  set {
+    name  = "resources.requests.cpu"
+    value = "250m"
+  }
+
+  set {
+    name  = "resources.limits.memory"
+    value = "1Gi"
+  }
+
+  set {
+    name  = "resources.limits.cpu"
+    value = "500m"
   }
 
   depends_on = [helm_release.elasticsearch]
 }
 
-# Kibana Ingress - Keep as is
-resource "kubernetes_ingress_v1" "kibana" {
+# Fluent Bit for log collection
+resource "helm_release" "fluent_bit" {
+  name       = "fluent-bit"
+  repository = "https://fluent.github.io/helm-charts"
+  chart      = "fluent-bit"
+  namespace  = kubernetes_namespace.logging.metadata[0].name
+  version    = "0.43.0"
+
+  values = [
+    yamlencode({
+      config = {
+        outputs = <<-EOT
+          [OUTPUT]
+              Name es
+              Match kube.*
+              Host elasticsearch-master.${kubernetes_namespace.logging.metadata[0].name}.svc.cluster.local
+              Port 9200
+              Logstash_Format On
+              Logstash_Prefix kubernetes
+              Retry_Limit 5
+              Suppress_Type_Name On
+        EOT
+      }
+    })
+  ]
+
+  depends_on = [helm_release.elasticsearch]
+}
+
+
+# Kibana Ingress
+resource "kubernetes_ingress_v1" "kibana_ingress" {
   metadata {
     name      = "kibana-ingress"
-    namespace = "elastic-stack"
+    namespace = kubernetes_namespace.logging.metadata[0].name
     annotations = {
-      "cert-manager.io/cluster-issuer" = "letsencrypt-prod"
+      "kubernetes.io/ingress.class"                = "nginx"
+      "nginx.ingress.kubernetes.io/rewrite-target" = "/"
+      "nginx.ingress.kubernetes.io/ssl-redirect"   = "false"
+      "nginx.ingress.kubernetes.io/backend-protocol" = "HTTP"
     }
   }
 
   spec {
-    ingress_class_name = "nginx"
-
-    tls {
-      hosts       = ["kibana.shipcodes.tech"]
-      secret_name = "kibana-tls"
-    }
-
     rule {
       host = "kibana.shipcodes.tech"
       http {
@@ -112,5 +174,8 @@ resource "kubernetes_ingress_v1" "kibana" {
     }
   }
 
-  depends_on = [helm_release.kibana]
+  depends_on = [
+    helm_release.kibana
+  ]
 }
+
