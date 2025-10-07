@@ -1,0 +1,7 @@
+---
+devops_group: devops
+config_file_source: config.txt
+config_file_dest: /opt/config.txt
+postgres_db: myapp
+postgres_user: myuser
+postgres_password: mypassword

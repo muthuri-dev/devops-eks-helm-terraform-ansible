@@ -1,695 +1,839 @@
-# DevOps EKS Infrastructure with Terraform, Helm & Ansible
+# Production EKS Infrastructure with Terraform, Helm & GitOps
 
-A production-ready DevOps infrastructure solution featuring Amazon EKS cluster with comprehensive observability stack, monitoring, logging, GitOps, and auto-scaling using Infrastructure as Code (IaC) principles.
+A production-ready Kubernetes infrastructure on Amazon EKS featuring comprehensive observability, automated CI/CD with GitOps, centralized logging, metrics monitoring, secrets management, and SSL certificate automation.
+
+<img width="2362" height="1507" alt="Image" src="https://github.com/user-attachments/assets/9d50db51-4317-4cf5-b381-a8ae79d19591" />
 
 ## 🏗️ Architecture Overview
 
-This project implements a complete production-grade EKS infrastructure with observability and GitOps:
+### High-Level Infrastructure Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                                  AWS Cloud                                       │
 │  ┌─────────────────────────────────────────────────────────────────────────────┐ │
-│  │                              VPC (10.0.0.0/16)                              │ │
+│  │                            VPC (10.0.0.0/16)                                │ │
 │  │                                                                             │ │
-│  │  ┌─────────────────┐                           ┌─────────────────┐          │ │
-│  │  │   Public Subnet │                           │   Public Subnet │          │ │
-│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │          │ │
-│  │  │                 │                           │                 │          │ │
-│  │  │  ┌─────────────┐│                           │┌─────────────────┐         │ │
-│  │  │  │ NAT Gateway ││                           ││  Load Balancers │         │ │
-│  │  │  │             ││                           ││ (Kibana/Grafana)│         │ │
-│  │  │  └─────────────┘│                           │└─────────────────┘         │ │
-│  │  └─────────────────┘                           └─────────────────┘          │ │
+│  │  ┌──────────────────┐                          ┌──────────────────┐         │ │
+│  │  │  Public Subnet   │                          │  Public Subnet   │         │ │
+│  │  │  (us-east-1a)    │                          │  (us-east-1b)    │         │ │
+│  │  │                  │                          │                  │         │ │
+│  │  │  ┌─────────────┐ │                          │ ┌──────────────┐ │         │ │
+│  │  │  │ NAT Gateway │ │                          │ │NGINX Ingress │ │         │ │
+│  │  │  │             │ │                          │ │  Controller  │ │         │ │
+│  │  │  └─────────────┘ │                          │ │  (LoadBalancer)          │ │
+│  │  └──────────────────┘                          │ └──────────────┘ │         │ │
+│  │           │                                     └──────────────────┘        │ │
 │  │           │                                              │                  │ │
-│  │  ┌─────────────────┐                           ┌─────────────────┐          │ │
-│  │  │  Private Subnet │                           │  Private Subnet │          │ │
-│  │  │   (us-east-1a)  │                           │   (us-east-1b)  │          │ │
-│  │  │                 │                           │                 │          │ │
-│  │  │ ┌─────────────┐ │                           │ ┌─────────────┐ │          │ │
-│  │  │ │ EKS Workers │ │                           │ │ EKS Workers │ │          │ │
-│  │  │ │ (Auto-Scale)│ │                           │ │ (Auto-Scale)│ │          │ │
-│  │  │ │┌───────────┐│ │                           │ │┌───────────┐│ │          │ │
-│  │  │ ││ELK Stack  ││ │                           │ ││Monitoring ││ │          │ │
-│  │  │ ││Prometheus ││ │                           │ ││ArgoCD     ││ │          │ │
-│  │  │ ││Vault      ││ │                           │ ││Apps       ││ │          │ │
-│  │  │ ││Fluent Bit ││ │                           │ ││PostgreSQL ││ │          │ │
-│  │  │ │└───────────┘│ │                           │ │└───────────┘│ │          │ │
-│  │  │ └─────────────┘ │                           │ └─────────────┘ │          │ │
-│  │  └─────────────────┘                           └─────────────────┘          │ │
+│  │  ┌──────────────────┐                          ┌──────────────────┐         │ │
+│  │  │ Private Subnet   │                          │ Private Subnet   │         │ │
+│  │  │  (us-east-1a)    │                          │  (us-east-1b)    │         │ │
+│  │  │                  │                          │                  │         │ │
+│  │  │ ┌──────────────┐ │                          │ ┌──────────────┐ │         │ │
+│  │  │ │ EKS Workers  │ │                          │ │ EKS Workers  │ │         │ │
+│  │  │ │ (Auto-Scale) │ │                          │ │ (Auto-Scale) │ │         │ │
+│  │  │ │              │ │                          │ │              │ │         │ │
+│  │  │ │ ┌──────────┐ │ │                          │ │ ┌──────────┐ │ │         │ │
+│  │  │ │ │ArgoCD    │ │ │                          │ │ │Prometheus│ │ │         │ │
+│  │  │ │ │Vault     │ │ │                          │ │ │Grafana   │ │ │         │ │
+│  │  │ │ │Kibana    │ │ │                          │ │ │Apps      │ │ │         │ │
+│  │  │ │ │PostgreSQL│ │ │                          │ │ │Fluent Bit│ │ │         │ │
+│  │  │ │ └──────────┘ │ │                          │ │ └──────────┘ │ │         │ │
+│  │  │ └──────────────┘ │                          │ └──────────────┘ │         │ │
+│  │  └──────────────────┘                          └──────────────────┘         │ │
 │  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                  │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │                          Amazon ECR (Container Registry)                    │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                              GitHub Repository                                   │
+│  ┌────────────────────┐              ┌──────────────────────┐                   │
+│  │ Application Code   │              │   Helm Charts        │                   │
+│  │  (Dev/Main Branch) │              │  (values.yaml)       │                   │
+│  └────────────────────┘              └──────────────────────┘                   │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-## 🎯 Features
+### Traffic Flow Architecture
 
-### ✅ **Infrastructure Components**
+```
+                                    Internet User
+                                         │
+                                         │ HTTPS Request
+                                         │ (*.shipcodes.tech)
+                                         ▼
+                              ┌──────────────────────┐
+                              │   Route 53 / DNS     │
+                              │  (Domain Resolution) │
+                              └──────────────────────┘
+                                         │
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │   AWS Load Balancer  │
+                              │  (Created by NGINX)  │
+                              └──────────────────────┘
+                                         │
+                                         │
+                    ┌────────────────────┼────────────────────┐
+                    │                    │                    │
+                    ▼                    ▼                    ▼
+         ┌──────────────────┐ ┌──────────────────┐ ┌──────────────────┐
+         │  EKS Worker Node │ │  EKS Worker Node │ │  EKS Worker Node │
+         │                  │ │                  │ │                  │
+         │ ┌──────────────┐ │ │ ┌──────────────┐ │ │ ┌──────────────┐ │
+         │ │NGINX Ingress │ │ │ │NGINX Ingress │ │ │ │NGINX Ingress │ │
+         │ │  Controller  │ │ │ │  Controller  │ │ │ │  Controller  │ │
+         │ │   (DaemonSet)│ │ │ │   (DaemonSet)│ │ │ │   (DaemonSet)│ │
+         │ └──────────────┘ │ │ └──────────────┘ │ │ └──────────────┘ │
+         └──────────────────┘ └──────────────────┘ └──────────────────┘
+                    │                    │                    │
+                    │ SSL Termination    │                    │
+                    │ (Let's Encrypt)    │                    │
+                    └────────────────────┼────────────────────┘
+                                         │
+                              ┌──────────▼──────────┐
+                              │  Ingress Resources  │
+                              │  (Route by Domain)  │
+                              └─────────────────────┘
+                                         │
+              ┌──────────────────────────┼──────────────────────────┐
+              │                          │                          │
+              ▼                          ▼                          ▼
+    ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+    │ ArgoCD Service   │      │ Grafana Service  │      │  Vault Service   │
+    │ (ClusterIP)      │      │ (ClusterIP)      │      │  (ClusterIP)     │
+    └──────────────────┘      └──────────────────┘
+              │                          │                          │
+              ▼                          ▼                          ▼
+    ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
+    │  ArgoCD Pods     │      │  Grafana Pods    │      │   Vault Pods     │
+    │  (Deployment)    │      │  (StatefulSet)   │      │  (StatefulSet)   │
+    └──────────────────┘      └──────────────────┘      └──────────────────┘
+```
 
-- **Amazon EKS**: Managed Kubernetes cluster with auto-scaling worker nodes
+### Request/Response Flow Detail
+
+```
+1. User Request:
+   https://argocd.shipcodes.tech
+          │
+          ▼
+2. DNS Resolution:
+   Cloudflare → AWS Load Balancer IP
+          │
+          ▼
+3. Load Balancer:
+   Distributes to NGINX Ingress on any worker node
+          │
+          ▼
+4. NGINX Ingress Controller:
+   - Reads Ingress resource
+   - Checks host: argocd.shipcodes.tech
+   - Terminates SSL (Let's Encrypt cert)
+   - Routes to backend service
+          │
+          ▼
+5. Kubernetes Service:
+   argocd-server (ClusterIP) on port 80
+          │
+          ▼
+6. Pod Selection:
+   Service selects healthy ArgoCD pod via label selector
+          │
+          ▼
+7. ArgoCD Pod:
+   Processes request and generates response
+          │
+          ▼
+8. Response Path (Reverse):
+   Pod → Service → Ingress → Load Balancer → User
+```
+
+## 🎯 Complete Infrastructure Components
+
+### ✅ Core Kubernetes Infrastructure
+
+- **Amazon EKS Cluster**: Managed Kubernetes control plane
+- **EKS Node Groups**: Auto-scaling worker nodes (2-12 nodes)
 - **Cluster Autoscaler**: Automatic node scaling based on pod demand
-- **VPC Networking**: Production-grade networking with public/private subnets
-- **EBS CSI Driver**: Persistent storage support with automatic provisioning
-- **Load Balancers**: AWS ALB for external access to services
+- **VPC & Networking**: Production-grade multi-AZ setup
+- **EBS CSI Driver**: Persistent storage with dynamic provisioning
+- **Metrics Server**: Resource metrics for HPA and monitoring
 
-### ✅ **Container & Database**
+### ✅ Ingress & Networking
 
-- **Amazon ECR**: Container registry for Docker images with scanning and lifecycle management
-- **CloudNativePG**: PostgreSQL operator for database workload management
-- **HashiCorp Vault**: Secrets management with secure storage
-- **Cert-Manager**: Automatic SSL certificate management with Let's Encrypt integration
+- **NGINX Ingress Controller**: Centralized ingress with SSL termination
+- **Cert-Manager**: Automatic SSL certificate provisioning via Let's Encrypt
+- **DNS Integration**: Domain-based routing (\*.shipcodes.tech)
+- **Load Balancer**: AWS NLB/ALB for external traffic
 
-### ✅ **Observability Stack**
+### ✅ Observability Stack
 
-- **ELK Stack**: Elasticsearch + Kibana with ECK operator for log aggregation
-- **Fluent Bit**: Lightweight log collection from all containers
-- **Prometheus**: Metrics collection and monitoring with persistent storage
-- **Grafana**: Metrics visualization and dashboards with persistent storage
-- **AlertManager**: Alert routing and management (configure via UI)
+#### Logging (EFK Stack)
 
-### ✅ **GitOps & DevOps**
+- **Elasticsearch**: Centralized log storage and indexing
+- **Fluent Bit**: Lightweight log collector (DaemonSet on all nodes)
+- **Kibana**: Log visualization and analysis dashboard
+
+#### Monitoring
+
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Metrics visualization and alerting
+- **Service Discovery**: Automatic scraping of Kubernetes metrics
+
+### ✅ GitOps & CI/CD
 
 - **ArgoCD**: GitOps continuous deployment
-- **Terraform**: Infrastructure as Code with remote state
-- **Helm**: Package management for Kubernetes applications
+- **GitHub Actions**: CI pipeline for build and push
+- **Helm Charts**: Application packaging and versioning
+
+### ✅ Secrets & Database
+
+- **HashiCorp Vault**: Centralized secrets management
+- **CloudNativePG**: PostgreSQL operator for database workloads
+- **Amazon ECR**: Private container registry
 
 ## 📁 Project Structure
 
 ```
-devops-eks-helm-terraform-ansible/
-├── infrastructure/                    # Terraform IaC configurations
-│   ├── 01-provider.tf                # Multi-provider configuration (AWS, Helm, Kubernetes, kubectl, TLS)
-│   ├── 02-backend.tf                 # S3 backend with state locking
-│   ├── 03-variables.tf               # Variable definitions with defaults
-│   ├── 04-vpc-networking.tf          # VPC, subnets, NAT gateway, security groups
-│   ├── 05-eks-cluster.tf             # EKS cluster configuration
-│   ├── 06-ebs-csi.tf                 # EBS CSI driver with OIDC provider
-│   ├── 07-nodegroup.tf               # EKS node groups with auto-scaling
-│   ├── 08-monitoring.tf              # Prometheus, Grafana, AlertManager (UI config)
-│   ├── 09-argocd.tf                  # ArgoCD GitOps platform
-│   ├── 10-logging.tf                 # ECK-based ELK stack
-│   ├── 11-outputs.tf                 # Infrastructure outputs
-│   ├── 12-ecr.tf                     # Amazon ECR container registry
-│   ├── 13-cloudnative-pg.tf          # CloudNativePG PostgreSQL operator
-│   ├── 14-cert-manager.tf            # Cert-Manager for SSL certificates
-│   ├── 15-vault.tf                   # HashiCorp Vault deployment
-│   ├── 16-cluster-autoscaler.tf      # Cluster autoscaler with YAML deployment
-│   └── cluster-autoscaler-deployment.yaml  # Cluster autoscaler YAML manifest
-├── helm/                             # Helm charts for applications
-├── ansible/                          # Ansible playbooks and roles
+devops-eks-infrastructure/
+├── infrastructure/                    # Terraform IaC
+│   ├── 01-provider.tf                # Provider configuration
+│   ├── 02-backend.tf                 # S3 backend with state
+│   ├── 03-variables.tf               # Variable definitions
+│   ├── 04-vpc-networking.tf          # VPC, subnets, NAT
+│   ├── 05-eks-cluster.tf             # EKS cluster
+│   ├── 06-ebs-csi.tf                 # EBS CSI driver
+│   ├── 07-nodegroup.tf               # Auto-scaling node groups
+│   ├── 08-monitoring.tf              # Prometheus & Grafana
+│   ├── 09-argocd.tf                  # ArgoCD with Ingress
+│   ├── 10-logging.tf                 # EFK stack
+│   ├── 11-nginx-ingress.tf           # NGINX Ingress Controller
+│   ├── 12-cert-manager.tf            # Cert-Manager
+│   ├── 13-vault.tf                   # Vault with Ingress
+│   ├── 14-ecr.tf                     # Amazon ECR
+│   ├── 15-cloudnative-pg.tf          # PostgreSQL operator
+│   ├── 16-cluster-autoscaler.tf      # Cluster autoscaler
+│   ├── 17-metrics-server.tf          # Metrics server
+│   └── 18-outputs.tf                 # Infrastructure outputs
+├── helm-charts/                      # Application Helm charts
+│   └── myapp/
+│       ├── Chart.yaml
+│       ├── values.yaml               # Updated by CI/CD
+│       └── templates/
 ├── application/                      # Application source code
-├── .gitignore                       # Comprehensive ignore rules
-└── README.md                        # This documentation
+│   ├── src/
+│   ├── Dockerfile
+│   └── requirements.txt
+├── .github/
+│   └── workflows/
+│       └── deploy.yml               # GitHub Actions workflow
+└── README.md
 ```
 
-## 🚀 Prerequisites
+## 🔄 Complete CI/CD Pipeline Flow
 
-Before you begin, ensure you have the following tools installed:
+### Pipeline Architecture
 
-### Required Tools
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           Developer Workflow                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │  1. Developer Push   │
+                              │  to 'dev' branch     │
+                              └──────────────────────┘
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │  2. Create PR        │
+                              │  dev → main          │
+                              └──────────────────────┘
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │  3. Code Review &    │
+                              │  Merge to main       │
+                              └──────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         GitHub Actions Workflow                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  Step 1: Checkout Code                                                          │
+│  ├─ actions/checkout@v3                                                         │
+│  └─ Fetches repository code                                                     │
+│                                                                                 │
+│  Step 2: Authenticate with Vault                                                │
+│  ├─ Connect to Vault (vault.shipcodes.tech)                                     │
+│  ├─ Retrieve AWS credentials                                                    │
+│  └─ Get ECR registry details                                                    │
+│                │                                                                │
+│                ▼                                                                │
+│         ┌────────────┐                                                          │
+│         │   Vault    │                                                          │
+│         │  Secrets:  │                                                          │
+│         │  - AWS_KEY │                                                          │
+│         │  - AWS_SEC │                                                          │
+│         │  - ECR_URI │                                                          │
+│         └────────────┘                                                          │
+│                │                                                                │
+│  Step 3: Build Docker Image                                                     │
+│  ├─ docker build -t myapp:$GITHUB_SHA                                           │
+│  └─ Tag with commit SHA for versioning                                          │
+│                                                                                 │
+│  Step 4: Push to Amazon ECR                                                     │
+│  ├─ aws ecr get-login-password                                                  │
+│  ├─ docker tag myapp:$SHA $ECR_URI/myapp:$SHA                                   │
+│  └─ docker push $ECR_URI/myapp:$SHA                                             │
+│                │                                                                │
+│                ▼                                                                │
+│         ┌────────────┐                                                          │
+│         │ Amazon ECR │                                                          │
+│         │   Image:   │                                                          │
+│         │ myapp:abc1 │                                                          │
+│         └────────────┘                                                          │
+│                │                                                                │
+│  Step 5: Update Helm Chart                                                      │
+│  ├─ Checkout helm-charts repository                                             │
+│  ├─ Update values.yaml with new image tag                                       │
+│  │  image:                                                                      │
+│  │    repository: $ECR_URI/myapp                                                │
+│  │    tag: abc123def456  # New commit SHA                                       │
+│  ├─ git commit -m "Update image to abc123"                                      │
+│  └─ git push to helm-charts repo                                                │
+│                                                                                 |
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           ArgoCD GitOps Sync                                     │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  Step 1: Detect Changes                                                         │
+│  ├─ ArgoCD monitors helm-charts repository                                      │
+│  ├─ Detects values.yaml change                                                  │
+│  └─ Triggers sync (auto or manual)                                              │
+│                                                                                 │
+│  Step 2: Sync Application                                                       │
+│  ├─ Renders Helm chart with new values                                          │
+│  ├─ Compares with cluster state                                                 │
+│  └─ Applies changes to EKS cluster                                              │
+│                                                                                 │
+│  Step 3: Rolling Update                                                         │
+│  ├─ Kubernetes Deployment rollout                                               │
+│  ├─ Pull new image from ECR                                                     │
+│  ├─ Create new pods with new image                                              │
+│  ├─ Wait for health checks                                                      │
+│  └─ Terminate old pods                                                          │
+│                                                                                 │
+│  Step 4: Health Verification                                                    │
+│  ├─ Check pod readiness probes                                                  │
+│  ├─ Verify service endpoints                                                    │
+│  └─ Application accessible via ingress                                          │
+│                                                                                 |
+└─────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+                              ┌──────────────────────┐
+                              │  Application Live!   │
+                              │  https://api         │
+                              │  .shipcodes.tech     │
+                              └──────────────────────┘
+```
 
-- **Terraform** >= 1.12.0
-- **AWS CLI** >= 2.0
-- **kubectl** >= 1.28
-- **Helm** >= 3.0
-- **curl** (for testing endpoints)
+## 📊 EFK Stack Architecture (Logging)
 
-### AWS Configuration
+### EFK Stack Components
 
-```bash
-# Configure AWS credentials
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                            EFK Logging Stack                                     │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
+│  EKS Node 1      │  │  EKS Node 2      │  │  EKS Node 3      │
+│                  │  │                  │  │                  │
+│ ┌──────────────┐ │  │ ┌──────────────┐ │  │ ┌──────────────┐ │
+│ │ Fluent Bit   │ │  │ │ Fluent Bit   │ │  │ │ Fluent Bit   │ │
+│ │ (DaemonSet)  │ │  │ │ (DaemonSet)  │ │  │ │ (DaemonSet)  │ │
+│ └──────┬───────┘ │  │ └──────┬───────┘ │  │ └──────┬───────┘ │
+│        │         │  │        │         │  │        │         │
+│ ┌──────▼───────┐ │  │ ┌──────▼───────┐ │  │ ┌──────▼───────┐ │
+│ │  App Pod 1   │ │  │ │  App Pod 3   │ │  │ │  App Pod 5   │ │
+│ │  logs/*.log  │ │  │ │  logs/*.log  │ │  │ │  logs/*.log  │ │
+│ └──────────────┘ │  │ └──────────────┘ │  │ └──────────────┘ │
+│ ┌──────────────┐ │  │ ┌──────────────┐ │  │ ┌──────────────┐ │
+│ │  App Pod 2   │ │  │ │  App Pod 4   │ │  │ │  App Pod 6   │ │
+│ │  logs/*.log  │ │  │ │  logs/*.log  │ │  │ │  logs/*.log  │ │
+│ └──────────────┘ │  │ └──────────────┘ │  │ └──────────────┘ │
+└────────┬─────────┘  └────────┬─────────┘  └────────┬─────────┘
+         │                     │                     │
+         │  Parse & Forward    │                     │
+         └─────────────────────┼─────────────────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   Elasticsearch     │
+                    │   (StatefulSet)     │
+                    │                     │
+                    │  • Index: fluent-*  │
+                    │  • Storage: 5GB     │
+                    │  • Replicas: 1      │
+                    └─────────────────────┘
+                               │
+                               │ Query & Visualize
+                               ▼
+                    ┌─────────────────────┐
+                    │      Kibana         │
+                    │   (Deployment)      │
+                    │                     │
+                    │  kibana.shipcodes   │
+                    │       .tech         │
+                    └─────────────────────┘
+                               │
+                               ▼
+                    ┌─────────────────────┐
+                    │   NGINX Ingress     │
+                    │   (SSL Enabled)     │
+                    └─────────────────────┘
+```
+
+### Fluent Bit Log Collection Process
+
+```
+1. Fluent Bit DaemonSet:
+   - Deployed on EVERY node in the cluster
+   - Runs as privileged pod with host access
+   - Mounts /var/log/containers from host
+
+2. Log Collection:
+   - Reads container logs: /var/log/containers/*.log
+   - Parses JSON format from container runtime
+   - Extracts metadata: pod, namespace, container name
+
+3. Log Processing:
+   - Filters: Remove system logs if needed
+   - Parsers: JSON, regex for custom formats
+   - Enrichment: Add Kubernetes metadata
+
+4. Log Forwarding:
+   - Protocol: HTTP/HTTPS
+   - Destination: Elasticsearch service
+   - Index: kubernetes-
+   - Buffering: Local disk for reliability
+
+5. Elasticsearch Storage:
+   - Creates daily indices
+   - Applies mapping for log fields
+   - Stores with retention policy
+```
+
+### Kibana Log Visualization Setup
+
+1. Access Kibana at `https://kibana.shipcodes.tech`
+2. Navigate to **Management** → **Index Patterns**
+3. Create index pattern: `kubernetes*`
+4. Select time field: `@timestamp`
+5. Go to **Discover** to view logs
+6. Create visualizations and dashboards
+
+## 📈 Prometheus & Grafana Monitoring
+
+### Monitoring Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        Prometheus Monitoring Stack                               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                            Metrics Sources                                       │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                  │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+│  │ Node Exporter│  │kube-state   │  │  cAdvisor   │  │   Custom    │            │
+│  │             │  │  -metrics   │  │             │  │ App Metrics │            │
+│  │ :9100/metrics  │ :8080/metrics  │ :10250/metrics │ :8080/metrics            │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘            │
+│         │                 │                 │                 │                 │
+│         │                 │                 │                 │                 │
+│         └─────────────────┴─────────────────┴─────────────────┘                 │
+│                                     │                                           │
+│                           Service Discovery                                     │
+│                      (Kubernetes API Integration)                               │
+└──────────────────────────────────────┬───────────────────────────────────────────┘
+                                       │
+                                       │ Scrape every 30s
+                                       ▼
+                            ┌─────────────────────┐
+                            │    Prometheus       │
+                            │   (StatefulSet)     │
+                            │                     │
+                            │  • TSDB Storage     │
+                            │  • Retention: 15d   │
+                            │  • PVC: 20GB        │
+                            │  • HA: Replicas     │
+                            └─────────────────────┘
+                                       │
+                                       │ PromQL Queries
+                                       ▼
+                            ┌─────────────────────┐
+                            │      Grafana        │
+                            │   (StatefulSet)     │
+                            │                     │
+                            │  grafana.shipcodes  │
+                            │       .tech         │
+                            │                     │
+                            │  • Dashboards       │
+                            │  • Alerts           │
+                            │  • PVC: 10GB        │
+                            └─────────────────────┘
+                                       │
+                                       ▼
+                            ┌─────────────────────┐
+                            │   NGINX Ingress     │
+                            │   (SSL Enabled)     │
+                            └─────────────────────┘
+```
+
+### Key Metrics Collected
+
+**Node Metrics (Node Exporter)**
+
+- CPU usage per core
+- Memory usage and available
+- Disk I/O and space
+- Network traffic
+
+**Cluster Metrics (kube-state-metrics)**
+
+- Pod status and restarts
+- Deployment replicas
+- Node status
+- Resource requests/limits
+
+**Container Metrics (cAdvisor)**
+
+- Container CPU usage
+- Container memory usage
+- Container network I/O
+- Container filesystem usage
+
+### Grafana Dashboard Access
+
+1. Access Grafana at `https://grafana.shipcodes.tech`
+2. Login with configured credentials
+3. Pre-configured dashboards:
+   - **Kubernetes Cluster Monitoring**: Overall cluster health
+   - **Node Exporter Full**: Detailed node metrics
+   - **Pod Monitoring**: Per-pod resource usage
+   - **Namespace Monitoring**: Resource usage by namespace
+
+## 🔐 Security & Secrets Management
+
+### Vault Integration
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│ Vault Secrets Management │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                            ┌─────────────────────┐
+                            │   HashiCorp Vault   │
+                            │   (StatefulSet)     │
+                            │                     │
+                            │  vault.shipcodes    │
+                            │       .tech         │
+                            └─────────────────────┘
+                                       │
+                    ┌──────────────────┼──────────────────┐
+                    │                  │                  │
+                    ▼                  ▼                  ▼
+         ┌──────────────────┐ ┌──────────────┐ ┌──────────────────┐
+         │ GitHub Actions   │ │ Application  │ │   Operators      │
+         │                  │ │   Pods       │ │                  │
+         │ • AWS Creds      │ │ • DB Creds   │ │ • API Keys       │
+         │ • ECR Access     │ │ • API Keys   │ │ • Certificates   │
+         │ • Deploy Keys    │ │ • Configs    │ │ • Tokens         │
+         └──────────────────┘ └──────────────┘ └──────────────────┘
+```
+
+## SSL Certificate Management
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                    Cert-Manager Certificate Flow                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌──────────────────────┐
+                              │  Kubernetes Ingress  │
+                              │  Created with TLS    │
+                              │                      │
+                              │  annotations:        │
+                              │   cert-manager.io/   │
+                              │   cluster-issuer:    │
+                              │   letsencrypt-prod   │
+                              └──────────────────────┘
+                                         │
+                                         │ Triggers
+                                         ▼
+                              ┌──────────────────────┐
+                              │   Cert-Manager       │
+                              │   (Deployment)       │
+                              └──────────────────────┘
+                                         │
+                                         │ Creates
+                                         ▼
+                              ┌──────────────────────┐
+                              │  Certificate Object  │
+                              │  (CRD)               │
+                              └──────────────────────┘
+                                         │
+                                         │ ACME Challenge
+                                         ▼
+                              ┌──────────────────────┐
+                              │   Let's Encrypt CA   │
+                              │   (HTTP-01)          │
+                              └──────────────────────┘
+                                         │
+                                         │ Validates domain
+                                         │ Issues certificate
+                                         ▼
+                              ┌──────────────────────┐
+                              │  Kubernetes Secret   │
+                              │  (TLS Certificate)   │
+                              │                      │
+                              │  - tls.crt           │
+                              │  - tls.key           │
+                              └──────────────────────┘
+                                         │
+                                         │ Mounted by
+                                         ▼
+                              ┌──────────────────────┐
+                              │  NGINX Ingress       │
+                              │  (SSL Termination)   │
+                              └──────────────────────┘
+```
+
+## 🚀 Getting Started
+
+Prerequisites
+Install required tools:
+
+```
+# Terraform
+curl -fsSL https://apt.releases.hashicorp.com/gpg | sudo apt-key add -
+sudo apt-add-repository "deb [arch=amd64] https://apt.releases.hashicorp.com $(lsb_release -cs) main"
+sudo apt-get update && sudo apt-get install terraform
+```
+
+# AWS CLI
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# kubectl
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# Helm
+
+```
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+AWS Configuration
+bash# Configure AWS credentials
 aws configure
 
-# Verify access
+# AWS Access Key ID: YOUR_ACCESS_KEY
+
+# AWS Secret Access Key: YOUR_SECRET_KEY
+
+# Default region: us-east-1
+
+# Default output format: json
+
+# Verify configuration
+```
+
 aws sts get-caller-identity
+
+## 🏗️ Infrastructure Deployment
+
+### Step 1: Initialize Terraform
+
 ```
-
-## 🔧 Infrastructure Setup
-
-### 1. Initialize Terraform Backend
-
-First, create the S3 bucket for Terraform state:
-
-```bash
-# Create S3 bucket for state (if not exists)
-aws s3 mb s3://devops-cluster-state-bucket --region us-east-1
-```
-
-### 2. Configure Variables (Optional)
-
-All variables have sensible defaults in `infrastructure/03-variables.tf`. You can override them if needed:
-
-- **Email**: `muthurikennedy082@gmail.com` (default for Let's Encrypt)
-- **Region**: `us-east-1` (default)
-- **Cluster**: `production_eks` (default)
-
-### 3. Deploy Infrastructure
-
-```bash
 cd infrastructure/
+```
 
-# Initialize Terraform
+### Initialize Terraform with backend
+
+```
 terraform init
+```
 
-# Plan the deployment
+### Validate configuration
+
+```
+terraform validate
+```
+
+### Format configuration files
+
+```
+terraform fmt
+```
+
+### Step 2: Plan Infrastructure
+
+```
+# Review planned changes
 terraform plan
+```
 
-# Apply the configuration
+# Save plan to file (optional)
+
+```
+terraform plan
+```
+
+### Step 3: Deploy Infrastructure
+
+```
+# Apply configuration
 terraform apply
 ```
 
-**What gets deployed:**
+# Or apply saved plan
 
-- ✅ EKS cluster with auto-scaling nodes (2-12 nodes)
-- ✅ Cluster autoscaler with YAML deployment
-- ✅ Monitoring stack (Prometheus + Grafana + AlertManager)
-- ✅ ELK stack for logging
-- ✅ Vault for secrets management
-- ✅ ArgoCD for GitOps
-- ✅ PostgreSQL operator
-- ✅ Cert-manager for SSL
+terraform apply
+Deployment creates:
 
-### 4. Configure kubectl
+✅ EKS cluster with control plane
 
-```bash
-# Update kubeconfig for EKS cluster
+✅ VPC with public/private subnets
+
+✅ NAT Gateway for private subnet internet access
+
+✅ Auto-scaling node groups (2-12 nodes)
+
+✅ NGINX Ingress Controller with LoadBalancer
+
+✅ Cert-Manager with Let's Encrypt integration
+
+✅ Prometheus & Grafana with persistent storage
+
+✅ Elasticsearch, Kibana, and Fluent Bit
+
+✅ ArgoCD with GitOps configuration
+
+✅ HashiCorp Vault for secrets
+
+✅ CloudNativePG PostgreSQL operator
+
+✅ Amazon ECR repository
+
+✅ Cluster Autoscaler
+
+✅ Metrics Server
+
+### Step 4: Configure kubectl
+
+```
+bash# Update kubeconfig for EKS cluster
 aws eks update-kubeconfig --region us-east-1 --name production_eks
+```
 
 # Verify cluster access
-kubectl get nodes
 
-# Check all pods are running
-kubectl get pods --all-namespaces
+```
+kubectl cluster-info
 ```
 
-## 🌐 Service Access
+# Check all nodes are ready
 
-### **Grafana Dashboard (Metrics & Monitoring)**
-
-```bash
-# Get Grafana LoadBalancer URL
-kubectl get service prometheus-stack-grafana -n monitoring
-
-# Access Grafana
-# Username: admin
-# Password: admin123!
 ```
-
-**Setting up Alerts in Grafana:**
-
-1. Open Grafana in your browser
-2. Go to **Alerting** → **Notification channels**
-3. Add **Email** notification channel
-4. Configure SMTP settings through the UI
-5. Create alert rules for your dashboards
-
-### **Prometheus (Metrics Storage)**
-
-```bash
-# Get Prometheus LoadBalancer URL
-kubectl get service prometheus-stack-kube-prom-prometheus -n monitoring
-
-# Access Prometheus UI for queries and targets
-```
-
-### **Kibana Dashboard (Log Visualization)**
-
-```bash
-# Get Kibana LoadBalancer URL
-kubectl get service kibana-kb-http -n elastic-stack
-
-# Access URL (example):
-# http://af2aafebe7cfd43aaa966173c9609a36-664672556.us-east-1.elb.amazonaws.com:5601
-```
-
-**Setting up Log Visualization:**
-
-1. Open Kibana in your browser
-2. Go to **Stack Management** → **Index Patterns**
-3. Create new index pattern: `fluent-bit*`
-4. Choose `@timestamp` as time field
-5. Go to **Discover** to view logs
-
-### **HashiCorp Vault (Secrets Management)**
-
-```bash
-# Get Vault LoadBalancer URL
-kubectl get service vault -n vault
-
-# Access Vault UI
-# Initialize with 3 key shares, 2 key threshold (recommended for demo)
-```
-
-**Vault Setup:**
-
-1. Open Vault UI in browser
-2. Initialize with your preferred key shares/threshold
-3. **Save the unseal keys and root token securely**
-4. Unseal Vault with the required number of keys
-5. Login with root token
-
-### **ArgoCD Dashboard (GitOps)**
-
-```bash
-# Get ArgoCD LoadBalancer URL
-kubectl get service argocd-server -n argocd
-
-# Get admin password
-kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
-```
-
-### **AlertManager (Alert Management)**
-
-```bash
-# Port-forward to access AlertManager
-kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-alertmanager 9093:9093
-
-# Access at http://localhost:9093
-```
-
-**Configure Email Alerts:**
-
-1. Port-forward to AlertManager
-2. Configure notification receivers via UI
-3. Set up routing rules for different alert severities
-
-### **Cluster Autoscaler (Auto-scaling)**
-
-```bash
-# Check cluster autoscaler status
-kubectl get pods -n kube-system | grep cluster-autoscaler
-
-# View autoscaler logs
-kubectl logs -n kube-system deployment/cluster-autoscaler
-
-# Check current node count
 kubectl get nodes
 ```
 
-**Auto-scaling Features:**
+# View all pods across namespaces
 
-- ✅ Automatic node scaling (2-12 nodes)
-- ✅ Auto-discovery of Auto Scaling Groups
-- ✅ Pod-driven scaling decisions
-- ✅ IRSA authentication for AWS API access
-
-### **Elasticsearch (Direct Access)**
-
-```bash
-# Port-forward to access Elasticsearch
-kubectl port-forward service/elasticsearch-es-http 9200:9200 -n elastic-stack
-
-# Test cluster health
-curl -X GET "localhost:9200/_cluster/health?pretty"
-
-# Check indices
-curl -X GET "localhost:9200/_cat/indices?v"
 ```
-
-### **Amazon ECR (Container Registry)**
-
-```bash
-# Get ECR login command
-terraform output ecr_login_command
-
-# Login to ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com
-
-# Build and push example
-docker build -t devops-app:latest .
-docker tag devops-app:latest YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest
-docker push YOUR_ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/devops-app:latest
-```
-
-### **CloudNativePG (PostgreSQL)**
-
-```bash
-# Check operator status
-kubectl get pods -n cnpg-system
-
-# Create a simple PostgreSQL cluster
-kubectl apply -f - <<EOF
-apiVersion: postgresql.cnpg.io/v1
-kind: Cluster
-metadata:
-  name: my-postgres
-  namespace: default
-spec:
-  instances: 1
-  storage:
-    size: 1Gi
-EOF
-
-# Check cluster status
-kubectl get cluster
-```
-
-### **Cert-Manager (SSL Certificates)**
-
-```bash
-# Check cert-manager status
-kubectl get pods -n cert-manager
-
-# View available certificate issuers
-kubectl get clusterissuers
-
-# Check certificates across all namespaces
-kubectl get certificates -A
-
-# Example: Enable SSL for your Ingress
-kubectl apply -f - <<EOF
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: my-app
-  annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
-spec:
-  tls:
-  - hosts:
-    - myapp.example.com
-    secretName: myapp-tls
-  rules:
-  - host: myapp.example.com
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: my-app
-            port:
-              number: 80
-EOF
-
-# Check certificate creation progress
-kubectl describe certificate myapp-tls
-```
-
-## 📊 Infrastructure Components Details
-
-### **EKS Cluster Configuration**
-
-- **Cluster Name**: `production_eks`
-- **Version**: Latest supported EKS version
-- **Node Groups**: Auto-scaling (2-12 nodes) across multiple AZs
-- **Instance Types**: Optimized for cost and performance
-- **Cluster Autoscaler**: YAML-based deployment with IRSA authentication
-
-### **Auto-scaling Configuration**
-
-- **Cluster Autoscaler**: v1.30.0 with auto-discovery
-- **Node Scaling**: 2 minimum, 12 maximum nodes
-- **Scaling Triggers**: Pod resource requests and scheduling failures
-- **AWS Integration**: IRSA for secure AWS API access
-- **Tags**: Auto-discovery via `k8s.io/cluster-autoscaler/enabled` and cluster name tags
-
-### **VPC Configuration**
-
-- **CIDR Block**: `10.0.0.0/16`
-- **Availability Zones**: 2 AZs for high availability
-- **Public Subnets**: 2 subnets for load balancers and NAT gateways
-- **Private Subnets**: 2 subnets for EKS worker nodes
-
-### **Storage Configuration**
-
-- **EBS CSI Driver**: Latest version with OIDC authentication
-- **Storage Class**: `gp2` (default)
-- **Persistent Volumes**: Automatic provisioning for stateful apps
-- **Monitoring Storage**: Prometheus (20Gi), Grafana (10Gi), AlertManager (5Gi)
-
-### **Observability Stack Details**
-
-#### Monitoring Stack
-
-- **Prometheus**: Metrics collection with 15-day retention and persistent storage
-- **Grafana**: Visualization dashboards with persistent storage (admin/admin123!)
-- **AlertManager**: Alert routing and management (configure via UI)
-- **Service Discovery**: Automatic metrics endpoint discovery
-
-#### ELK Stack (Logging)
-
-- **Elasticsearch**: 8.5.1 with 5GB persistent storage
-- **Kibana**: 8.5.1 with LoadBalancer access
-- **Fluent Bit**: DaemonSet for container log collection
-- **Index Pattern**: `fluent-bit*` for log visualization
-
-### **Secrets Management**
-
-#### HashiCorp Vault
-
-- **Version**: 0.31.0 (latest Helm chart)
-- **Storage**: Persistent 5Gi storage
-- **Access**: LoadBalancer for UI access
-- **High Availability**: Single instance (can be scaled)
-- **Integration**: Ready for application secret injection
-
-### **Security & SSL Configuration**
-
-#### Cert-Manager
-
-- **Version**: v1.15.3 (OCI Helm chart)
-- **Certificate Authority**: Let's Encrypt production
-- **Email Notifications**: Configurable via variables
-- **Challenge Method**: HTTP-01 validation
-- **Auto-Renewal**: 60 days before expiration
-- **ClusterIssuer**: `letsencrypt-prod` for production certificates
-
-### **Database Management**
-
-#### CloudNativePG
-
-- **PostgreSQL Operator**: Latest version
-- **High Availability**: Multi-instance cluster support
-- **Backup Integration**: Built-in backup and recovery
-- **Monitoring**: Prometheus metrics integration
-
-### **GitOps**
-
-#### ArgoCD
-
-- **Version**: Latest stable release
-- **Access**: LoadBalancer for UI and CLI access
-- **Authentication**: Initial admin user with generated password
-- **Repository Integration**: Git-based application deployment
-
-## 🔐 Security Best Practices
-
-### **State Management**
-
-- Terraform state stored in encrypted S3 bucket
-- State locking with DynamoDB recommended
-- Remote state prevents local state corruption
-
-### **Network Security**
-
-- Private subnets for workloads
-- Public subnets only for load balancers
-- Security groups with least privilege access
-- NAT Gateway for secure outbound connectivity
-
-### **Authentication & Authorization**
-
-- OIDC provider for service account authentication
-- IAM roles for service accounts (IRSA)
-- Cluster RBAC with service accounts
-
-## 🔧 Troubleshooting
-
-### **Common Issues**
-
-#### Cluster Autoscaler Not Scaling
-
-```bash
-# Check cluster autoscaler pod status
-kubectl get pods -n kube-system | grep cluster-autoscaler
-
-# View autoscaler logs
-kubectl logs -n kube-system deployment/cluster-autoscaler
-
-# Check auto scaling group tags
-aws autoscaling describe-auto-scaling-groups --query 'AutoScalingGroups[?contains(Tags[?Key==`k8s.io/cluster-autoscaler/enabled`].Value, `true`)].AutoScalingGroupName'
-
-# Check pending pods that should trigger scaling
-kubectl get pods --all-namespaces | grep Pending
-```
-
-#### Vault Authentication Issues
-
-```bash
-# Check Vault pod status
-kubectl get pods -n vault
-
-# Check Vault status
-kubectl exec -n vault vault-0 -- vault status
-
-# View Vault logs
-kubectl logs -n vault vault-0
-
-# If sealed, you need to unseal with your keys
-kubectl exec -n vault vault-0 -- vault operator unseal <unseal-key>
-```
-
-#### Monitoring Alerts Not Working
-
-```bash
-# Check Grafana and AlertManager pods
-kubectl get pods -n monitoring
-
-# Access AlertManager to configure notifications
-kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-alertmanager 9093:9093
-
-# Check Prometheus targets
-kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-prometheus 9090:9090
-# Visit http://localhost:9090/targets
-```
-
-#### EBS CSI Driver Not Working
-
-```bash
-# Check EBS CSI driver pods
-kubectl get pods -n kube-system | grep ebs
-
-# Check storage classes
-kubectl get storageclass
-
-# Verify OIDC provider
-aws eks describe-cluster --name production_eks --query 'cluster.identity.oidc.issuer'
-```
-
-#### Kibana Not Accessible
-
-```bash
-# Check Kibana pod logs
-kubectl logs -n elastic-stack -l kibana.k8s.elastic.co/name=kibana
-
-# Check service status
-kubectl get service kibana-kb-http -n elastic-stack
-
-# Check Elasticsearch cluster health
-kubectl port-forward -n elastic-stack svc/elasticsearch-es-http 9200:9200
-curl -X GET "localhost:9200/_cluster/health?pretty"
-```
-
-#### PostgreSQL Operator Issues
-
-```bash
-# Check CloudNativePG operator status
-kubectl get pods -n cnpg-system
-
-# View operator logs
-kubectl logs -n cnpg-system -l app.kubernetes.io/name=cloudnative-pg
-
-# Check PostgreSQL clusters
-kubectl get clusters -A
-```
-
-### **Useful Commands**
-
-```bash
-# Get all pods across namespaces
 kubectl get pods --all-namespaces
+🌐 Accessing Services
+Get Service URLs
+bash# Get all ingress URLs
+kubectl get ingress --all-namespaces
 
-# Check all services with external access
-kubectl get services --all-namespaces | grep LoadBalancer
 
-# Monitor cluster autoscaler decisions
-kubectl logs -n kube-system deployment/cluster-autoscaler -f
+# Expected output:
 
-# Check node resource usage
-kubectl top nodes
-kubectl top pods --all-namespaces
+# NAMESPACE NAME HOSTS ADDRESS
 
-# View all persistent volumes
-kubectl get pv
+# argocd argocd-ingress argocd.shipcodes.tech <LoadBalancer-DNS>
 
-# Check certificate status
-kubectl get certificates -A
+# monitoring grafana-ingress grafana.shipcodes.tech <LoadBalancer-DNS>
 
-# Monitor Vault status
-kubectl exec -n vault vault-0 -- vault status
+# elastic-stack kibana-ingress kibana.shipcodes.tech <LoadBalancer-DNS>
 
-# Check Terraform state
-terraform state list
-
-# View infrastructure outputs
-terraform output
+# vault vault-ingress vault.shipcodes.tech <LoadBalancer-DNS>
 ```
 
-## 🧹 Cleanup
+Configure DNS Records
+For each service, create DNS A/CNAME records pointing to the LoadBalancer:
+bash# Get LoadBalancer DNS
+kubectl get service -n ingress-nginx ingress-nginx-controller
 
-To destroy the infrastructure:
+Create DNS records in Route 53 or your DNS provider like cloudflare:
 
-```bash
-cd infrastructure/
-terraform destroy
+argocd.shipcodes.tech → LoadBalancer DNS
+grafana.shipcodes.tech → LoadBalancer DNS
+kibana.shipcodes.tech → LoadBalancer DNS
+vault.shipcodes.tech → LoadBalancer DNS
+
+## 📦 Deploying Applications
+
+Application Deployment Flow
+
+```
+Developer → GitHub (dev) → PR → Merge (main) → GitHub Actions
+↓
+┌───────────┴────────────┐
+│ │
+Vault Secrets Build Image
+│ │
+└───────────┬────────────┘
+↓
+Push to ECR
+↓
+Update Helm Chart (values.yaml)
+↓
+ArgoCD Detects
+↓
+Sync to EKS Cluster
+↓
+Application Deployed
+↓
+Accessible via Ingress
+Create Application Helm Chart
 ```
 
-⚠️ **Warning**: This will permanently delete all resources including persistent data. Ensure you have backups of any important data.
+## 📝 Best Practices
 
-## 📈 Scaling and Production Considerations
+Security
 
-### **For Production Use:**
-
-1. **Enable DynamoDB State Locking**:
-
-   ```hcl
-   terraform {
-     backend "s3" {
-       bucket         = "devops-cluster-state-bucket"
-       key            = "terraform.tfstate"
-       region         = "us-east-1"
-       dynamodb_table = "terraform-state-lock"
-       encrypt        = true
-     }
-   }
-   ```
-
-2. **Multi-Environment Setup**:
-
-   - Use Terraform workspaces or separate state files
-   - Environment-specific variable files
-   - Separate AWS accounts for environments
-
-3. **Enhanced Security**:
-
-   - Enable AWS GuardDuty
-   - Set up AWS Config for compliance
-   - Implement pod security policies
-   - Network policies for micro-segmentation
-
-4. **Backup Strategy**:
-   - Regular EBS snapshots
-   - Elasticsearch backup to S3
-   - ArgoCD application definitions in Git
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-For questions and support:
-
-- Create an issue in this repository
-- Contact: [muthuri.dev](mailto:contact@muthuri.dev)
-
-## 🔗 Additional Resources
-
-- [Terraform AWS Provider Documentation](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [Amazon EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)
-- [ECK (Elastic Cloud on Kubernetes) Documentation](https://www.elastic.co/guide/en/cloud-on-k8s/current/index.html)
-- [Prometheus Operator Documentation](https://prometheus-operator.dev/)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-- [Helm Documentation](https://helm.sh/docs/)
-
----
-
-**Built with ❤️ for modern DevOps practices**
+Rotate Secrets Regularly: Update credentials in Vault periodically
+Use RBAC: Implement least-privilege access controls
+Enable Pod Security: Use Pod Security Standards
+Network Policies: Restrict pod-to-pod communication
+Image Scanning: Enable ECR image scanning
+Audit Logging: Enable EKS control plane logging
