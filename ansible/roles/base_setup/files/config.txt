@@ -1,0 +1,39 @@
+# Application Configuration File
+# This file contains application settings
+
+app_name: MyApplication
+version: 1.0.0
+environment: production
+
+# Database Configuration
+database:
+  host: localhost
+  port: 5432
+  name: myapp
+  user: myuser
+
+# API Settings
+api:
+  host: 0.0.0.0
+  port: 8080
+  debug: false
+
+# Logging Configuration
+logging:
+  level: INFO
+  file: /var/log/myapp/app.log
+  max_size: 100MB
+  backup_count: 5
+
+# Security Settings
+security:
+  ssl_enabled: true
+  allowed_hosts:
+    - example.com
+    - api.example.com
+
+# Feature Flags
+features:
+  new_ui: true
+  experimental_api: false
+  maintenance_mode: false

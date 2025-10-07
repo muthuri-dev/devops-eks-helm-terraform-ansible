@@ -1,0 +1,84 @@
+---
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install required system packages
+  apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+      - nginx
+    state: present
+
+- name: Create devops group
+  group:
+    name: "{{ devops_group }}"
+    state: present
+
+- name: Copy config file to /opt directory with proper permissions
+  copy:
+    src: "{{ config_file_source }}"
+    dest: "{{ config_file_dest }}"
+    owner: root
+    group: "{{ devops_group }}"
+    mode: "0660"
+
+- name: Ensure PostgreSQL service is running and enabled
+  systemd:
+    name: postgresql
+    state: started
+    enabled: yes
+
+- name: Ensure Nginx service is running and enabled
+  systemd:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Wait for PostgreSQL to be ready
+  wait_for:
+    port: 5432
+    delay: 10
+    timeout: 30
+
+- name: Setup PostgreSQL user and database using postgres user
+  shell: |
+    # Create user if not exists
+    sudo -u postgres psql -t -c "SELECT 1 FROM pg_roles WHERE rolname='{{ postgres_user }}'" | grep -q 1 || sudo -u postgres psql -c "CREATE USER {{ postgres_user }} WITH PASSWORD '{{ postgres_password }}' CREATEDB;"
+    # Create database if not exists
+    sudo -u postgres psql -t -c "SELECT 1 FROM pg_database WHERE datname='{{ postgres_db }}'" | grep -q 1 || sudo -u postgres createdb -O {{ postgres_user }} {{ postgres_db }}
+  args:
+    executable: /bin/bash
+
+- name: Test PostgreSQL connection
+  shell: |
+    sudo -u postgres psql -d {{ postgres_db }} -c "SELECT version();"
+  args:
+    executable: /bin/bash
+  register: postgres_test
+  changed_when: false
+
+- name: Display PostgreSQL status
+  debug:
+    msg: "PostgreSQL is running successfully: {{ postgres_test.stdout }}"
+
+- name: Test Nginx service
+  uri:
+    url: http://localhost
+    status_code: 200
+  register: nginx_test
+
+- name: Display Nginx status
+  debug:
+    msg: "Nginx is running successfully - HTTP Status: {{ nginx_test.status }}"
+
+- name: Display completion message
+  debug:
+    msg: |
+      Configuration completed successfully!
+      - Config file: {{ config_file_dest }} (owned by group {{ devops_group }})
+      - PostgreSQL: {{ postgres_db }} database created
+      - PostgreSQL user: {{ postgres_user }} created
+      - Nginx: serving on port 80

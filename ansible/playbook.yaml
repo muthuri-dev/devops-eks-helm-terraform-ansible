@@ -1,0 +1,6 @@
+---
+- name: Configure VM with Base Setup
+  hosts: server
+  become: yes
+  roles:
+    - base_setup
