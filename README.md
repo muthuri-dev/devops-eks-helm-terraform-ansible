@@ -115,6 +115,8 @@ A production-ready Kubernetes infrastructure on Amazon EKS featuring comprehensi
     └──────────────────┘      └──────────────────┘      └──────────────────┘
 ```
 
+<img width="1181" height="2340" alt="Image" src="https://github.com/user-attachments/assets/148eced5-e2d7-4454-9f52-4d52a961aaa9" />
+
 ### Request/Response Flow Detail
 
 ```
@@ -237,6 +239,8 @@ devops-eks-infrastructure/
 
 ## 🔄 Complete CI/CD Pipeline Flow
 
+<img width="2673" height="965" alt="Image" src="https://github.com/user-attachments/assets/2ea5b0a1-e50b-422e-8611-f6cd6872b1cf" />
+
 ### Pipeline Architecture
 
 ```
@@ -349,6 +353,8 @@ devops-eks-infrastructure/
                               └──────────────────────┘
 ```
 
+<img width="2255" height="1439" alt="Image" src="https://github.com/user-attachments/assets/aa1257e0-81a5-4ca2-aa56-f37043744963" />
+
 ## 📊 EFK Stack Architecture (Logging)
 
 ### EFK Stack Components
@@ -406,6 +412,8 @@ devops-eks-infrastructure/
                     └─────────────────────┘
 ```
 
+<img width="2255" height="1436" alt="Image" src="https://github.com/user-attachments/assets/f3b7b179-3f5c-4710-ac6b-7d00270f0563" />
+
 ### Fluent Bit Log Collection Process
 
 ```
@@ -446,6 +454,8 @@ devops-eks-infrastructure/
 6. Create visualizations and dashboards
 
 ## 📈 Prometheus & Grafana Monitoring
+
+<img width="1261" height="1500" alt="Image" src="https://github.com/user-attachments/assets/fd269e39-d36e-4557-901b-24785c9d579d" />
 
 ### Monitoring Architecture
 
@@ -504,6 +514,8 @@ devops-eks-infrastructure/
                             └─────────────────────┘
 ```
 
+<img width="2253" height="1438" alt="Image" src="https://github.com/user-attachments/assets/877262ce-45ac-4ce0-9a34-959fac6effe1" />
+
 ### Key Metrics Collected
 
 **Node Metrics (Node Exporter)**
@@ -538,6 +550,8 @@ devops-eks-infrastructure/
    - **Namespace Monitoring**: Resource usage by namespace
 
 ## 🔐 Security & Secrets Management
+
+<img width="2255" height="1444" alt="Image" src="https://github.com/user-attachments/assets/c8a5579b-34fe-4005-b211-db9a02ab8c6a" />
 
 ### Vault Integration
 
