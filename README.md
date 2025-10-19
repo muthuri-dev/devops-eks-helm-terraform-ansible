@@ -846,8 +846,13 @@ Create Application Helm Chart
 Security
 
 Rotate Secrets Regularly: Update credentials in Vault periodically
+
 Use RBAC: Implement least-privilege access controls
+
 Enable Pod Security: Use Pod Security Standards
+
 Network Policies: Restrict pod-to-pod communication
+
 Image Scanning: Enable ECR image scanning
+
 Audit Logging: Enable EKS control plane logging

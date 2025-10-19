@@ -1,38 +1,52 @@
-Role Name
-=========
+# Ansible VM Configuration Documentation
 
-A brief description of the role goes here.
+## Overview
 
-Requirements
-------------
+This Ansible project automatically configures a virtual machine with essential services and proper security settings. It ensures consistent server setup across environments.
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+## What It Configures
 
-Role Variables
---------------
+### 1. File Management
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+- Copies a configuration file to the `/opt/` directory
+- Sets specific permissions: only users in the `devops` group can read/write the file
+- Maintains proper ownership and access controls
 
-Dependencies
-------------
+### 2. Database Setup
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+- Installs PostgreSQL database system
+- Creates a dedicated database and user account
+- Ensures the database service starts automatically and remains running
+- Sets up secure authentication
 
-Example Playbook
-----------------
+### 3. Web Server
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+- Installs Nginx web server
+- Configures the service to start on system boot
+- Verifies the web server is responding correctly
 
-    - hosts: servers
-      roles:
-         - { role: username.rolename, x: 42 }
+## How It Works
 
-License
--------
+### Role-Based Structure
 
-BSD
+The configuration is organized into Ansible roles, making it modular and reusable. The `base_setup` role contains all the configuration logic.
 
-Author Information
-------------------
+### Execution Flow
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+1. **System Preparation**: Updates system packages and installs required software
+2. **Security Setup**: Creates user groups and sets file permissions
+3. **Service Configuration**: Installs and configures PostgreSQL and Nginx
+4. **Verification**: Tests that all services are running correctly
+
+### Key Features
+
+- **Idempotent**: Can be run multiple times safely without causing issues
+- **Automated**: Requires minimal manual intervention
+- **Secure**: Implements proper file permissions and service security
+- **Verifiable**: Includes checks to confirm successful configuration
+
+## Typical Use Case
+
+When provisioning a new virtual machine, this playbook can transform it from a basic system to a fully configured server with database and web services ready for application deployment.
+
+The configuration meets enterprise standards for security and maintainability while keeping the setup process simple and repeatable.
